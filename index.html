@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UP - Competencias Directivas (v8.5)</title>
+    <title>UP - Competencias Directivas (v10 - Datos Corregidos)</title>
     <!-- Scripts de React, Prop-Types y Gráficas -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -13,9 +13,15 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Iconos Lucide -->
     <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- jsPDF para exportar PDFs -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700;900&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #f8f9fa; -webkit-tap-highlight-color: transparent; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            -webkit-tap-highlight-color: transparent; 
+        }
         .up-blue { background-color: #004b8d; }
         .up-red { background-color: #ce1126; }
         .text-up-blue { color: #004b8d; }
@@ -24,61 +30,300 @@
         .bg-up-gold { background-color: #a68a56; }
         .text-up-gold { color: #a68a56; }
         
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { 
+            from { opacity: 0; transform: translateY(20px); } 
+            to { opacity: 1; transform: translateY(0); } 
+        }
+        @keyframes slideIn { 
+            from { opacity: 0; transform: translateX(-20px); } 
+            to { opacity: 1; transform: translateX(0); } 
+        }
+        @keyframes scaleIn { 
+            from { opacity: 0; transform: scale(0.95); } 
+            to { opacity: 1; transform: scale(1); } 
+        }
         .animate-fade { animation: fadeIn 0.4s ease-out forwards; }
+        .animate-slide { animation: slideIn 0.3s ease-out forwards; }
+        .animate-scale { animation: scaleIn 0.3s ease-out forwards; }
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .stat-card {
+            transition: all 0.3s ease;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .student-card {
+            transition: all 0.2s ease;
+        }
+        .student-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 75, 141, 0.2);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #004b8d 0%, #0066b3 100%);
+            transition: all 0.2s ease;
+        }
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 5px 15px rgba(0, 75, 141, 0.3);
+        }
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+        
+        .progress-bar {
+            height: 8px;
+            background: #e5e7eb;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #004b8d 0%, #0066b3 100%);
+            transition: width 0.5s ease;
+        }
+        
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white; }
+        }
     </style>
 </head>
 <body>
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useMemo, useEffect } = React;
+        const { useState, useMemo, useEffect, useCallback, memo } = React;
         const { 
             BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, 
-            ResponsiveContainer, PieChart, Pie, Cell 
+            ResponsiveContainer, PieChart, Pie, Cell, RadarChart, Radar, 
+            PolarGrid, PolarAngleAxis, PolarRadiusAxis, LineChart, Line
         } = window.Recharts;
 
-        // Base de Datos Oficial Auditada Sesión por Sesión - 24 Alumnos
-        // Menti S1 (27-ene), S2 (03-feb), S3 (10-feb)
+        // ============================================
+        // DATOS BASE - 24 Alumnos (CORREGIDOS del PDF)
+        // ============================================
         const rawData = [
-            { nombre: "Álvarez Justo Alberto", quizzes: [8034, 0, 0], asistencia: ['A','A','F','F'], carrera: "Finanzas", apodo: "Alberto", hobbie: "Carreras Coches", crack: "Negociar", altasPropia: ["Negociación", "Liderazgo", "Comunicación"], bajas: ["Administración del tiempo", "Manejo de estrés", "Delegación"], wingfinder: ["Analítico", "Disciplinado", "Liderazgo", "Objetivo"], valores: ["Autocontrol", "Lealtad", "Seguridad"], v: 8, k: 4, a: 3 },
-            { nombre: "Arana López Emilio", quizzes: [5256, 0, 6326], asistencia: ['I','A','F','A'], carrera: "Contabilidad", apodo: "Emilio", hobbie: "Padel", crack: "GOLF", altasPropia: ["Liderazgo", "Administración del tiempo", "Manejo de estrés"], bajas: ["Gestión del tiempo", "Comunicación asertiva", "Orden"], wingfinder: ["Sociable", "Paciente", "Relajado", "Independiente"], valores: ["Divertirse", "Armonía", "Organización"], v: 3, k: 11, a: 1 },
+            { nombre: "Álvarez Justo Alberto", quizzes: [8034, 0, 0], asistencia: ['A','A','F','F'], carrera: "Finanzas", apodo: "Alberto", hobbie: "Carreras Coches", crack: "Negociar", altasPropia: ["Negociación", "Liderazgo", "Comunicación"], bajas: ["Administración del tiempo", "Manejo de estrés", "Delegación"], wingfinder: [], valores: ["Autocontrol", "Lealtad", "Seguridad"], v: 8, k: 4, a: 3 },
+            { nombre: "Arana López Emilio", quizzes: [5256, 0, 6326], asistencia: ['I','A','I','A'], carrera: "Contabilidad", apodo: "Emilio", hobbie: "Padel", crack: "GOLF", altasPropia: ["Liderazgo", "Administración del tiempo", "Manejo de estrés"], bajas: ["Gestión del tiempo", "Comunicación asertiva", "Orden"], wingfinder: ["Sociable", "Paciente", "Relajado", "Independiente"], valores: ["Divertirse", "Armonía", "Organización"], v: 3, k: 11, a: 1 },
             { nombre: "Castro Leo Axel Patricio", quizzes: [8964, 9975, 7997], asistencia: ['A','A','A','A'], carrera: "Finanzas", apodo: "Axel", hobbie: "Series / GYM", crack: "Matemáticas Financieras", altasPropia: ["Liderazgo", "Trabajo en equipo", "Pensamiento crítico"], bajas: ["Inteligencia emocional", "Manejo del estrés", "Reuniones"], wingfinder: ["Directo", "Autónomo", "Reservado", "Independiente"], valores: ["Autocontrol", "Respeto", "Perseverancia"], v: 5, k: 4, a: 6 },
             { nombre: "Cruzado García Emiliano", quizzes: [7995, 7113, 7954], asistencia: ['A','A','A','A'], carrera: "Contabilidad", apodo: "Emiliano", hobbie: "Ejercicio Hyrox", crack: "Cacería", altasPropia: ["Manejo de estrés", "Liderazgo", "Trabajo en equipo"], bajas: ["Reuniones efectivas", "Negociación", "Planeación"], wingfinder: ["Paciente", "Creatividad", "Relajado", "Pragmático"], valores: ["Divertirse", "Lealtad", "Puntualidad"], v: 6, k: 4, a: 5 },
             { nombre: "Duarte Villa María José", quizzes: [8363, 9432, 8497], asistencia: ['A','A','A','A'], carrera: "Cyberseguridad", apodo: "MAJO", hobbie: "Cine / Tejer", crack: "Cocinando", altasPropia: ["Liderazgo", "Pensamiento Crítico", "Reuniones efectivas"], bajas: ["Negociación", "Inteligencia emocional", "Gestión del cambio"], wingfinder: ["Modesta", "Autónoma", "Paciente", "Relajada"], valores: ["Autocontrol", "Integridad", "Organización"], v: 5, k: 5, a: 5 },
             { nombre: "Gaytán Ruiz David", quizzes: [8106, 8074, 8703], asistencia: ['A','A','A','A'], carrera: "Finanzas", apodo: "David", hobbie: "Tenis", crack: "Finanzas", altasPropia: ["Inteligencia emocional", "Negociación", "Liderazgo"], bajas: ["Gestión del cambio", "Administración del tiempo", "Manejo de estrés"], wingfinder: ["Directo", "Autónomo", "Pragmático", "Independiente"], valores: ["Liderazgo", "Perseverancia", "Integridad"], v: 5, k: 6, a: 4 },
-            { nombre: "Gutiérrez Velázquez Roberto", quizzes: [6652, 4229, 4680], asistencia: ['A','A','A','A'], carrera: "Finanzas", apodo: "Roberto", hobbie: "Tenis", crack: "Golf", altasPropia: ["Liderazgo", "Toma de decisiones", "Negociación"], bajas: ["Gestión del cambio", "Comunicación", "Empatía"], wingfinder: ["Directo", "Paciente", "Pragmático", "Sociable"], valores: ["Lealtad", "Congruencia", "Liderazgo"], v: 5, k: 5, a: 5 },
+            { nombre: "Gutiérrez Velázquez Roberto", quizzes: [6652, 4229, 4680], asistencia: ['A','A','A','A'], carrera: "Finanzas", apodo: "Roberto", hobbie: "Tenis", crack: "Golf", altasPropia: ["Liderazgo", "Toma de decisiones", "Negociación"], bajas: ["Gestión del cambio", "Comunicación", "Empatía"], wingfinder: ["Directo", "Paciente", "Pragmático"], valores: ["Lealtad", "Congruencia", "Liderazgo"], v: 5, k: 5, a: 5 },
             { nombre: "Hernández Rodríguez Luis Felipe", quizzes: [8637, 9102, 10284], asistencia: ['F','A','A','A'], carrera: "Contabilidad", apodo: "Felipe", hobbie: "Leer / GYM", crack: "Manejar", altasPropia: ["Disciplina", "Liderazgo", "Organización"], bajas: ["Negociación", "Inteligencia emocional", "Delegación"], wingfinder: ["Reservado", "Diligente", "Relajado", "Intuitivo"], valores: ["Autocontrol", "Respeto", "Comunicación"], v: 5, k: 1, a: 6 },
-            { nombre: "López Bravo Ana Camila", quizzes: [0, 0, 6409], asistencia: ['A','A','A','I'], carrera: "Finanzas", apodo: "Camila", hobbie: "Pilates", crack: "Pilates", altasPropia: ["Empatía", "Colaboración", "Escucha activa"], bajas: ["Manejo de estrés", "Inteligencia emocional", "Comunicación asertiva"], wingfinder: ["Empatía", "Escucha activa", "Colaboración", "Soporte"], valores: ["Respeto", "Empatía", "Humildad"], v: 6, k: 4, a: 5 },
-            { nombre: "López Iglesias Daniel", quizzes: [8579, 9042, 8022], asistencia: ['X','A','A','A'], carrera: "Finanzas", apodo: "Daniel", hobbie: "GYM", crack: "Basket", altasPropia: ["Trabajo en equipo", "Liderazgo", "Inteligencia emocional"], bajas: ["Manejo del estrés", "Negociación", "Gestión del cambio"], wingfinder: ["Paciente", "Autónomo", "Soporte", "Atento"], valores: ["Bienestar", "Armonía", "Perseverancia"], v: 6, k: 4, a: 5 },
+            { nombre: "López Bravo Ana Camila", quizzes: [0, 0, 6409], asistencia: ['A','A','A','I'], carrera: "Finanzas", apodo: "Camila", hobbie: "Pilates", crack: "Pilates", altasPropia: ["Empatía", "Colaboración", "Escucha activa"], bajas: ["Manejo de estrés", "Inteligencia emocional", "Comunicación asertiva"], wingfinder: [], valores: ["Respeto", "Empatía", "Humildad"], v: 6, k: 4, a: 5 },
+            { nombre: "López Iglesias Daniel", quizzes: [8579, 9042, 8022], asistencia: ['X','A','A','A'], carrera: "Finanzas", apodo: "Daniel", hobbie: "GYM", crack: "Basket", altasPropia: ["Trabajo en equipo", "Liderazgo", "Inteligencia emocional"], bajas: ["Manejo del estrés", "Negociación", "Gestión del cambio"], wingfinder: ["Paciente", "Autónomo", "Soporte"], valores: ["Bienestar", "Armonía", "Perseverancia"], v: 6, k: 4, a: 5 },
             { nombre: "López Palacios Emiliano", quizzes: [5926, 3168, 5970], asistencia: ['A','A','A','I'], carrera: "Negocios", apodo: "Emiliano", hobbie: "GYM / Soccer", crack: "Soccer", altasPropia: ["Inteligencia emocional", "Trabajo en equipo", "Pensamiento crítico"], bajas: ["Negociación", "Manejo de estrés", "Gestión del cambio"], wingfinder: ["Directo", "Pragmático", "Balance", "Intuitivo"], valores: ["Puntualidad", "Justicia", "Respeto"], v: 5, k: 4, a: 6 },
             { nombre: "López Vázquez Emilio Rogelio", quizzes: [8325, 0, 7793], asistencia: ['A','A','F','A'], carrera: "RRHH", apodo: "ROGER", hobbie: "Videojuegos", crack: "Atletismo", altasPropia: ["Pensamiento crítico", "Inteligencia emocional", "Liderazgo"], bajas: ["Negociación", "Manejo de estrés", "Comunicación"], wingfinder: ["Centrado", "Pragmático", "Conservador", "Ágil"], valores: ["Congruencia", "Justicia", "Lealtad"], v: 4, k: 8, a: 3 },
-            { nombre: "Márquez Padilla Alcántara José Andrés", quizzes: [8402, 7634, 7665], asistencia: ['F','A','A','A'], carrera: "Ingeniería", apodo: "Andrés", hobbie: "Idiomas (Ruso)", crack: "Ajedrez", altasPropia: ["Pensamiento crítico", "Análisis", "Liderazgo"], bajas: ["Comunicación", "Delegación", "Trabajo en equipo"], wingfinder: ["Pensamiento crítico", "Resolución problemas", "Análisis", "Prudencia"], valores: ["Integridad", "Servicio", "Responsabilidad"], v: 5, k: 5, a: 5 },
-            { nombre: "Montoya Alanis Alan", quizzes: [6900, 8056, 7552], asistencia: ['A','A','A','A'], carrera: "Finanzas", apodo: "Alan", hobbie: "GYM Pesas", crack: "Carisma", altasPropia: ["Inteligencia emocional", "Negociación", "Empatía"], bajas: ["Gestión del cambio", "Gestión del tiempo", "Manejo de estrés"], wingfinder: ["Reservado", "Pragmático", "Conservador", "Modesto"], valores: ["Liderazgo", "Determinación", "Empatía"], v: 5, k: 4, a: 6 },
-            { nombre: "Mújica García Emilio", quizzes: [5800, 7921, 6213], asistencia: ['A','A','A','A'], carrera: "Finanzas", apodo: "Emilio", hobbie: "Videojuegos", crack: "Sociable", altasPropia: ["Empatía", "Adaptabilidad", "Sociabilidad"], bajas: ["Manejo de estrés", "Organización", "Planeación"], wingfinder: ["Creatividad", "Empatía", "Atento", "Soporte"], valores: ["Empatía", "Perdón", "Perseverancia"], v: 4, k: 6, a: 5 },
-            { nombre: "Novelo Salomón Ana Amelie", quizzes: [8100, 5500, 0], asistencia: ['A','A','R','F'], carrera: "Negocios", apodo: "Amelie", hobbie: "Cine", crack: "Basket", altasPropia: ["Gestión del cambio", "Liderazgo", "Manejo de estrés"], bajas: ["Autocontrol", "Comunicación", "Delegación"], wingfinder: ["Gestión del cambio", "Liderazgo", "Manejo de estrés", "Determinada"], valores: ["Lealtad", "Perseverancia", "Puntualidad"], v: 7, k: 6, a: 2 },
-            { nombre: "Núñez Castañeda Natalia", quizzes: [8375, 7497, 8345], asistencia: ['X','A','A','A'], carrera: "Mecatrónica", apodo: "Natalia", hobbie: "LEGOS", crack: "Idiomas (Japonés)", altasPropia: ["Liderazgo", "Reuniones efectivas", "Trabajo en equipo"], bajas: ["Manejo de estrés", "Negociación", "Delegación"], wingfinder: ["Centrada", "Modesta", "Paciente", "Relajada"], valores: ["Alegría", "Amistad", "Determinación"], v: 6, k: 6, a: 4 },
-            { nombre: "Perez Varela Ana Cecilia", quizzes: [0, 6988, 7312], asistencia: ['A','A','A','A'], carrera: "Mercadotecnia", apodo: "AnaCecy", hobbie: "Tés", crack: "Cocina (Carnitas)", altasPropia: ["Administración de tiempo", "Inteligencia emocional", "Liderazgo"], bajas: ["Negociación", "Manejo de estrés", "Trabajo en equipo"], wingfinder: ["Diplomática", "Soporte", "Inteligencia emocional", "Paciente"], valores: ["Empatía", "Respeto", "Puntualidad"], v: 7, k: 6, a: 2 },
-            { nombre: "Said Pérez José Ignacio", quizzes: [0, 6544, 7889], asistencia: ['A','A','F','A'], carrera: "Contabilidad", apodo: "Ignacio", hobbie: "Ver Deportes", crack: "Beisbol", altasPropia: ["Inteligencia emocional", "Liderazgo", "Gestión del cambio"], bajas: ["Manejo de estrés", "Comunicación asertiva", "Administración del tiempo"], wingfinder: ["Inteligencia emocional", "Liderazgo", "Gestión del cambio", "Analítico"], valores: ["Empatía", "Disciplina", "Perseverancia"], v: 6, k: 8, a: 5 },
-            { nombre: "Salas Rubio Ian Trett", quizzes: [8893, 8728, 9110], asistencia: ['A','A','A','A'], carrera: "Negocios", apodo: "IAN", hobbie: "Videojuegos", crack: "Improvisación", altasPropia: ["Inteligencia emocional", "Trabajo en equipo", "Pensamiento crítico"], bajas: ["Negociación", "Gestión del cambio", "Liderazgo"], wingfinder: ["Inteligencia emocional", "Trabajo equipo", "Pensamiento crítico", "Creativo"], valores: ["Empatía", "Disciplina", "Lealtad"], v: 6, k: 8, a: 5 },
-            { nombre: "Sarabia González Fatima Daniela", quizzes: [8783, 8255, 8443], asistencia: ['A','A','A','A'], carrera: "Finanzas", apodo: "Daniela", hobbie: "Música (ADELE)", crack: "Lectura de Emociones", altasPropia: ["Inteligencia emocional", "Administración del tiempo", "Autogestión"], bajas: ["Gestión del cambio", "Negociación", "Delegación"], wingfinder: ["Inteligencia emocional", "Gestión tiempo", "Autogestión", "Atenta"], valores: ["Alegría", "Lealtad", "Autoestima"], v: 7, k: 2, a: 6 },
-            { nombre: "Torres Landa Lozano Patricio", quizzes: [8378, 0, 7112], asistencia: ['A','A','A','A'], carrera: "Mercadotecnia", apodo: "Patricio", hobbie: "Tocho", crack: "Videojuegos", altasPropia: ["Liderazgo", "Trabajo en equipo", "Comunicación"], bajas: ["Gestión del cambio", "Negociación", "Delegación"], wingfinder: ["Liderazgo", "Trabajo equipo", "Comunicación", "Directo"], valores: ["Autoestima", "Respeto", "Iniciativa"], v: 3, k: 5, a: 7 },
-            { nombre: "Vazquez Paniagua Macias Juan Manuel", quizzes: [8713, 7874, 8221], asistencia: ['A','A','R','A'], carrera: "Mecatrónica", apodo: "JUAN", hobbie: "Videojuegos", crack: "Programación", altasPropia: ["Pensamiento Crítico", "Trabajo en equipo", "Inteligencia emocional"], bajas: ["Liderazgo", "Manejo de estrés", "Negociación"], wingfinder: ["Pensamiento Crítico", "Trabajo equipo", "Inteligencia emocional", "Independiente"], valores: ["Determinación", "Congruencia", "Responsabilidad"], v: 4, k: 3, a: 8 },
-            { nombre: "Verdura Basañez Marc", quizzes: [8910, 8896, 9225], asistencia: ['A','A','A','A'], carrera: "Negocios", apodo: "Marc", crack: "Negociación", altasPropia: ["Negociación", "Estrategia", "Liderazgo"], bajas: ["Delegación", "Administración del tiempo", "Manejo de estrés"], wingfinder: ["Negociación", "Estrategia", "Liderazgo", "Pragmático"], valores: ["Respeto", "Excelencia", "Disciplina"], v: 5, k: 5, a: 5 }
+            { nombre: "Márquez Padilla Alcántara José Andrés", quizzes: [8402, 7634, 8023], asistencia: ['F','A','A','A'], carrera: "Ingeniería", apodo: "Andrés", hobbie: "Idiomas (Ruso)", crack: "Ajedrez", altasPropia: ["Pensamiento crítico", "Análisis", "Liderazgo"], bajas: ["Comunicación", "Delegación", "Trabajo en equipo"], wingfinder: [], valores: ["Integridad", "Servicio", "Responsabilidad"], v: 5, k: 5, a: 5 },
+            { nombre: "Montoya Alanis Alan", quizzes: [7551, 7109, 7805], asistencia: ['A','A','A','A'], carrera: "Finanzas", apodo: "Alan", hobbie: "GYM Pesas", crack: "Carisma", altasPropia: ["Inteligencia emocional", "Negociación", "Empatía"], bajas: ["Gestión del cambio", "Gestión del tiempo", "Manejo de estrés"], wingfinder: ["Reservado", "Pragmático", "Conservador", "Modesto"], valores: ["Liderazgo", "Determinación", "Empatía"], v: 5, k: 4, a: 6 },
+            { nombre: "Mújica García Emilio", quizzes: [8369, 0, 7867], asistencia: ['A','A','A','A'], carrera: "Finanzas", apodo: "Emilio", hobbie: "Videojuegos", crack: "Sociable", altasPropia: ["Empatía", "Adaptabilidad", "Sociabilidad"], bajas: ["Manejo de estrés", "Organización", "Planeación"], wingfinder: ["Creatividad", "Empatía", "Atento"], valores: ["Empatía", "Perdón", "Perseverancia"], v: 4, k: 6, a: 5 },
+            { nombre: "Novelo Salomón Ana Amelie", quizzes: [8111, 0, 0], asistencia: ['A','A','R','F'], carrera: "Negocios", apodo: "Amelie", hobbie: "Cine", crack: "Basket", altasPropia: ["Gestión del cambio", "Liderazgo", "Manejo de estrés"], bajas: ["Autocontrol", "Comunicación", "Delegación"], wingfinder: [], valores: ["Lealtad", "Perseverancia", "Puntualidad"], v: 7, k: 6, a: 2 },
+            { nombre: "Núñez Castañeda Natalia", quizzes: [8375, 7497, 8345], asistencia: ['X','A','A','A'], carrera: "Mecatrónica", apodo: "Natalia", hobbie: "LEGOS", crack: "Idiomas (Japonés)", altasPropia: ["Liderazgo", "Reuniones efectivas", "Trabajo en equipo"], bajas: ["Manejo de estrés", "Negociación", "Delegación"], wingfinder: ["Centrada", "Modesta", "Relajada"], valores: ["Alegría", "Amistad", "Determinación"], v: 6, k: 6, a: 4 },
+            { nombre: "Perez Varela Ana Cecilia", quizzes: [6527, 6430, 8857], asistencia: ['A','A','A','A'], carrera: "Mercadotecnia", apodo: "AnaCecy", hobbie: "Tés", crack: "Cocina (Carnitas)", altasPropia: ["Administración de tiempo", "Inteligencia emocional", "Liderazgo"], bajas: ["Negociación", "Manejo de estrés", "Trabajo en equipo"], wingfinder: ["Diplomática", "Soporte", "Balance", "Sociable"], valores: ["Empatía", "Respeto", "Puntualidad"], v: 7, k: 6, a: 2 },
+            { nombre: "Said Pérez José Ignacio", quizzes: [0, 7410, 0], asistencia: ['A','A','F','A'], carrera: "Contabilidad", apodo: "Ignacio", hobbie: "Ver Deportes", crack: "Beisbol", altasPropia: ["Inteligencia emocional", "Liderazgo", "Gestión del cambio"], bajas: ["Manejo de estrés", "Comunicación asertiva", "Administración del tiempo"], wingfinder: ["Conexiones", "Creatividad", "Determinación", "Pensamiento"], valores: ["Empatía", "Disciplina", "Perseverancia"], v: 6, k: 8, a: 5 },
+            { nombre: "Salas Rubio Ian Trett", quizzes: [8893, 8728, 8683], asistencia: ['A','A','A','A'], carrera: "Negocios", apodo: "IAN", hobbie: "Videojuegos", crack: "Improvisación", altasPropia: ["Inteligencia emocional", "Trabajo en equipo", "Pensamiento crítico"], bajas: ["Negociación", "Gestión del cambio", "Liderazgo"], wingfinder: ["Diplomático", "Innovador", "Relajado", "Intuitivo"], valores: ["Empatía", "Disciplina", "Lealtad"], v: 6, k: 8, a: 5 },
+            { nombre: "Sarabia González Fatima Daniela", quizzes: [8783, 8255, 9864], asistencia: ['A','A','A','A'], carrera: "Finanzas", apodo: "Daniela", hobbie: "Música (ADELE)", crack: "Lectura de Emociones", altasPropia: ["Inteligencia emocional", "Administración del tiempo", "Autogestión"], bajas: ["Gestión del cambio", "Negociación", "Delegación"], wingfinder: ["Diplomático", "Equilibrada", "Sociable", "Intuitivo"], valores: ["Alegría", "Lealtad", "Autoestima"], v: 7, k: 2, a: 6 },
+            { nombre: "Torres Landa Lozano Patricio", quizzes: [8378, 0, 8100], asistencia: ['A','A','A','A'], carrera: "Mercadotecnia", apodo: "Patricio", hobbie: "Tocho", crack: "Videojuegos", altasPropia: ["Liderazgo", "Trabajo en equipo", "Comunicación"], bajas: ["Gestión del cambio", "Negociación", "Delegación"], wingfinder: ["Equilibrado", "Social", "Creativo", "Empatía"], valores: ["Autoestima", "Respeto", "Iniciativa"], v: 3, k: 5, a: 7 },
+            { nombre: "Vazquez Paniagua Macias Juan Manuel", quizzes: [8713, 7874, 9375], asistencia: ['A','A','R','A'], carrera: "Mecatrónica", apodo: "JUAN", hobbie: "Videojuegos", crack: "Programación", altasPropia: ["Pensamiento Crítico", "Trabajo en equipo", "Inteligencia emocional"], bajas: ["Liderazgo", "Manejo de estrés", "Negociación"], wingfinder: ["Autónomo", "Pragmático", "Conservador", "Modesto"], valores: ["Determinación", "Congruencia", "Responsabilidad"], v: 4, k: 3, a: 8 },
+            { nombre: "Verdura Basañez Marc", quizzes: [8910, 8896, 7876], asistencia: ['A','A','A','A'], carrera: "Negocios", apodo: "Marc", hobbie: "Negocios", crack: "Negociación", altasPropia: ["Negociación", "Estrategia", "Liderazgo"], bajas: ["Delegación", "Administración del tiempo", "Manejo de estrés"], wingfinder: ["Directo", "Autónomo", "Modesto", "Relajado"], valores: ["Respeto", "Excelencia", "Disciplina"], v: 5, k: 5, a: 5 }
         ];
 
         const UP_BLUE = '#004b8d', UP_RED = '#ce1126', UP_GOLD = '#a68a56';
 
-        const Icon = ({ name, size = 18, className = "" }) => {
-            useEffect(() => { if (window.lucide) { window.lucide.createIcons(); } }, [name]);
+        // ============================================
+        // COMPONENTE: ICONO
+        // ============================================
+        const Icon = memo(({ name, size = 18, className = "" }) => {
+            useEffect(() => { 
+                if (window.lucide) { window.lucide.createIcons(); } 
+            }, [name]);
             return <i data-lucide={name} style={{ width: size, height: size }} className={className}></i>;
-        };
+        });
 
+        // ============================================
+        // COMPONENTE: TARJETA DE ESTADÍSTICA
+        // ============================================
+        const StatCard = memo(({ title, value, color = "up-blue", icon, trend }) => (
+            <div className={`glass-card p-6 border-b-4 border-${color} shadow-lg stat-card animate-scale`}>
+                <div className="flex items-center justify-between mb-2">
+                    <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest">{title}</p>
+                    {icon && <Icon name={icon} size={16} className={`text-${color}`} />}
+                </div>
+                <p className="text-3xl font-black text-gray-800">{value}</p>
+                {trend && <p className="text-xs text-green-600 font-bold mt-1">↑ {trend}</p>}
+            </div>
+        ));
+
+        // ============================================
+        // COMPONENTE: FILTROS AVANZADOS
+        // ============================================
+        const Filters = memo(({ filters, setFilters, carreras }) => (
+            <div className="glass-card p-4 shadow-lg rounded-lg mb-6 animate-fade">
+                <div className="flex items-center gap-2 mb-3">
+                    <Icon name="filter" size={16} className="text-up-blue" />
+                    <h3 className="text-xs font-black uppercase text-up-blue">Filtros Avanzados</h3>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <select 
+                        value={filters.carrera} 
+                        onChange={(e) => setFilters({...filters, carrera: e.target.value})}
+                        className="px-3 py-2 border rounded-lg text-sm focus:outline-none focus:border-up-blue"
+                    >
+                        <option value="">Todas las carreras</option>
+                        {carreras.map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                    <select 
+                        value={filters.canal} 
+                        onChange={(e) => setFilters({...filters, canal: e.target.value})}
+                        className="px-3 py-2 border rounded-lg text-sm focus:outline-none focus:border-up-blue"
+                    >
+                        <option value="">Todos los canales VAK</option>
+                        <option value="Visual">Visual</option>
+                        <option value="Kinestésico">Kinestésico</option>
+                        <option value="Auditivo">Auditivo</option>
+                    </select>
+                    <select 
+                        value={filters.rendimiento} 
+                        onChange={(e) => setFilters({...filters, rendimiento: e.target.value})}
+                        className="px-3 py-2 border rounded-lg text-sm focus:outline-none focus:border-up-blue"
+                    >
+                        <option value="">Todos los niveles</option>
+                        <option value="alto">Alto rendimiento (&gt;24000)</option>
+                        <option value="medio">Rendimiento medio (18000-24000)</option>
+                        <option value="bajo">Requiere apoyo (&lt;18000)</option>
+                    </select>
+                </div>
+            </div>
+        ));
+
+        // ============================================
+        // COMPONENTE: COMPARADOR DE ESTUDIANTES
+        // ============================================
+        const StudentComparison = memo(({ student1, student2, onClose }) => {
+            const compareData = [
+                { 
+                    subject: 'Quiz Total', 
+                    [student1.apodo]: student1.quizzes.reduce((a,b)=>a+b,0),
+                    [student2.apodo]: student2.quizzes.reduce((a,b)=>a+b,0),
+                    fullMark: 30000
+                },
+                { 
+                    subject: 'Asistencia', 
+                    [student1.apodo]: student1.asistencia.filter(a => a === 'A').length * 2500,
+                    [student2.apodo]: student2.asistencia.filter(a => a === 'A').length * 2500,
+                    fullMark: 10000
+                },
+                { 
+                    subject: 'Visual', 
+                    [student1.apodo]: student1.v * 1000,
+                    [student2.apodo]: student2.v * 1000,
+                    fullMark: 11000
+                },
+                { 
+                    subject: 'Kinestésico', 
+                    [student1.apodo]: student1.k * 1000,
+                    [student2.apodo]: student2.k * 1000,
+                    fullMark: 11000
+                },
+                { 
+                    subject: 'Auditivo', 
+                    [student1.apodo]: student1.a * 1000,
+                    [student2.apodo]: student2.a * 1000,
+                    fullMark: 8000
+                }
+            ];
+
+            return (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 no-print">
+                    <div className="bg-white rounded-lg shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto animate-scale">
+                        <div className="sticky top-0 bg-white border-b p-4 flex justify-between items-center">
+                            <h2 className="text-xl font-black uppercase text-up-blue flex items-center gap-2">
+                                <Icon name="git-compare" size={20} />
+                                Comparación de Estudiantes
+                            </h2>
+                            <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg">
+                                <Icon name="x" size={20} />
+                            </button>
+                        </div>
+                        
+                        <div className="p-6 space-y-6">
+                            {/* Radar Chart */}
+                            <div className="glass-card p-6 rounded-lg">
+                                <h3 className="text-sm font-black uppercase text-up-blue mb-4">Análisis Comparativo</h3>
+                                <ResponsiveContainer width="100%" height={300}>
+                                    <RadarChart data={compareData}>
+                                        <PolarGrid />
+                                        <PolarAngleAxis dataKey="subject" tick={{fontSize: 10, fontWeight: 'bold'}} />
+                                        <PolarRadiusAxis />
+                                        <Radar name={student1.apodo} dataKey={student1.apodo} stroke={UP_BLUE} fill={UP_BLUE} fillOpacity={0.6} />
+                                        <Radar name={student2.apodo} dataKey={student2.apodo} stroke={UP_RED} fill={UP_RED} fillOpacity={0.6} />
+                                        <Legend />
+                                    </RadarChart>
+                                </ResponsiveContainer>
+                            </div>
+
+                            {/* Comparación lado a lado */}
+                            <div className="grid grid-cols-2 gap-4">
+                                {[student1, student2].map((s, idx) => (
+                                    <div key={idx} className={`glass-card p-6 rounded-lg border-t-4 ${idx === 0 ? 'border-up-blue' : 'border-up-red'}`}>
+                                        <div className="text-center mb-4">
+                                            <div className={`w-16 h-16 mx-auto ${idx === 0 ? 'up-blue' : 'up-red'} text-white flex items-center justify-center text-2xl font-black mb-2`}>
+                                                {s.nombre[0]}
+                                            </div>
+                                            <p className="font-black text-sm uppercase">{s.nombre}</p>
+                                            <p className="text-xs text-gray-500 italic">"{s.apodo}"</p>
+                                        </div>
+                                        <div className="space-y-3 text-xs">
+                                            <div>
+                                                <p className="text-gray-400 font-bold uppercase mb-1">Total Quizzes</p>
+                                                <p className="font-black text-lg">{s.quizzes.reduce((a,b)=>a+b,0)}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-gray-400 font-bold uppercase mb-1">Fortaleza Principal</p>
+                                                <p className="font-bold text-green-700">{s.altasPropia[0]}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-gray-400 font-bold uppercase mb-1">Área de Mejora</p>
+                                                <p className="font-bold text-red-700">{s.bajas[0]}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-gray-400 font-bold uppercase mb-1">Perfil Wingfinder</p>
+                                                <p className="font-bold text-up-gold">{s.wingfinder.length > 0 ? s.wingfinder[0] : 'No disponible'}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        });
+
+        // ============================================
+        // COMPONENTE PRINCIPAL
+        // ============================================
         const App = () => {
             const [activeTab, setActiveTab] = useState('resumen');
             const [searchTerm, setSearchTerm] = useState('');
             const [selectedStudent, setSelectedStudent] = useState(null);
+            const [filters, setFilters] = useState({ carrera: '', canal: '', rendimiento: '' });
+            const [compareMode, setCompareMode] = useState(false);
+            const [compareStudents, setCompareStudents] = useState([]);
+            const [sortBy, setSortBy] = useState('nombre');
 
+            // Estadísticas memoizadas
             const stats = useMemo(() => {
                 const counts = { altas: {}, bajas: {}, canales: { Visual: 0, Kinestésico: 0, Auditivo: 0 } };
                 let sums = [0, 0, 0], countsParticip = [0, 0, 0];
@@ -95,97 +340,192 @@
                     }
                 });
 
+                const avgTotal = rawData.reduce((sum, s) => sum + s.quizzes.reduce((a,b)=>a+b,0), 0) / rawData.length;
+
                 return {
-                    topAltas: Object.entries(counts.altas).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value).slice(0, 3),
-                    topBajas: Object.entries(counts.bajas).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value).slice(0, 3),
+                    topAltas: Object.entries(counts.altas).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value).slice(0, 5),
+                    topBajas: Object.entries(counts.bajas).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value).slice(0, 5),
                     canalesData: Object.entries(counts.canales).map(([name, value]) => ({ name, value })),
                     quizHistory: [
                         { name: 'S1', score: countsParticip[0] > 0 ? Math.round(sums[0]/countsParticip[0]) : 0 },
                         { name: 'S2', score: countsParticip[1] > 0 ? Math.round(sums[1]/countsParticip[1]) : 0 },
                         { name: 'S3', score: countsParticip[2] > 0 ? Math.round(sums[2]/countsParticip[2]) : 0 }
                     ],
-                    quizRanking: [...rawData].map(s => ({ name: s.apodo, score: s.quizzes.reduce((a,b)=>a+b,0) })).sort((a, b) => b.score - a.score).slice(0, 10)
+                    quizRanking: [...rawData].map(s => ({ 
+                        name: s.apodo, 
+                        score: s.quizzes.reduce((a,b)=>a+b,0),
+                        student: s 
+                    })).sort((a, b) => b.score - a.score),
+                    avgTotal: Math.round(avgTotal),
+                    totalAsistencias: rawData.reduce((sum, s) => sum + s.asistencia.filter(a => a === 'A').length, 0),
+                    asistenciaPromedio: Math.round((rawData.reduce((sum, s) => sum + s.asistencia.filter(a => a === 'A').length, 0) / (rawData.length * 4)) * 100)
                 };
             }, []);
 
-            const filteredStudents = rawData.filter(s => s.nombre.toLowerCase().includes(searchTerm.toLowerCase()) || s.apodo.toLowerCase().includes(searchTerm.toLowerCase()));
+            // Carreras únicas
+            const carreras = useMemo(() => [...new Set(rawData.map(s => s.carrera))].sort(), []);
 
+            // Estudiantes filtrados
+            const filteredStudents = useMemo(() => {
+                return rawData
+                    .filter(s => {
+                        const matchSearch = s.nombre.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                                          s.apodo.toLowerCase().includes(searchTerm.toLowerCase());
+                        const matchCarrera = !filters.carrera || s.carrera === filters.carrera;
+                        
+                        let matchCanal = true;
+                        if (filters.canal) {
+                            const maxS = Math.max(s.v || 0, s.k || 0, s.a || 0);
+                            const canalD = s.v === maxS ? 'Visual' : (s.k === maxS ? 'Kinestésico' : 'Auditivo');
+                            matchCanal = canalD === filters.canal;
+                        }
+                        
+                        let matchRendimiento = true;
+                        if (filters.rendimiento) {
+                            const total = s.quizzes.reduce((a,b)=>a+b,0);
+                            if (filters.rendimiento === 'alto') matchRendimiento = total > 24000;
+                            else if (filters.rendimiento === 'medio') matchRendimiento = total >= 18000 && total <= 24000;
+                            else if (filters.rendimiento === 'bajo') matchRendimiento = total < 18000;
+                        }
+                        
+                        return matchSearch && matchCarrera && matchCanal && matchRendimiento;
+                    })
+                    .sort((a, b) => {
+                        if (sortBy === 'nombre') return a.nombre.localeCompare(b.nombre);
+                        if (sortBy === 'score') return b.quizzes.reduce((x,y)=>x+y,0) - a.quizzes.reduce((x,y)=>x+y,0);
+                        if (sortBy === 'asistencia') return b.asistencia.filter(x => x === 'A').length - a.asistencia.filter(x => x === 'A').length;
+                        return 0;
+                    });
+            }, [searchTerm, filters, sortBy]);
+
+            // Manejo de comparación
+            const handleCompare = useCallback((student) => {
+                if (compareStudents.length < 2 && !compareStudents.find(s => s.nombre === student.nombre)) {
+                    setCompareStudents([...compareStudents, student]);
+                }
+            }, [compareStudents]);
+
+            const resetCompare = useCallback(() => {
+                setCompareStudents([]);
+                setCompareMode(false);
+            }, []);
+
+            // Exportar a PDF (simplificado)
+            const exportToPDF = useCallback(() => {
+                alert('Función de exportación a PDF en desarrollo. Por ahora usa Ctrl+P para imprimir.');
+            }, []);
+
+            // ============================================
+            // RENDER: RESUMEN
+            // ============================================
             const renderResumen = () => (
                 <div className="space-y-6 animate-fade pb-10">
+                    {/* Estadísticas principales */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <div className="bg-white p-5 border-b-4 border-up-blue shadow-sm text-center">
-                            <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest leading-none mb-2">Alumnos</p>
-                            <p className="text-2xl font-black text-gray-800">{rawData.length}</p>
-                        </div>
-                        <div className="bg-white p-5 border-b-4 border-up-red shadow-sm text-center">
-                            <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest leading-none mb-2">Media Real S3</p>
-                            <p className="text-2xl font-black text-gray-800">{stats.quizHistory[2].score}</p>
-                        </div>
-                        <div className="bg-white p-5 border-b-4 border-up-gold shadow-sm text-center">
-                            <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest leading-none mb-2">Ranking #1</p>
-                            <p className="text-lg font-black truncate">{stats.quizRanking[0].name}</p>
-                        </div>
-                        <div className="bg-white p-5 border-b-4 border-up-blue shadow-sm text-center">
-                            <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest leading-none mb-2">Fortaleza Gral.</p>
-                            <p className="text-lg font-black truncate">{stats.topAltas[0]?.name}</p>
-                        </div>
+                        <StatCard title="Total Alumnos" value={rawData.length} color="up-blue" icon="users" />
+                        <StatCard title="Media S3" value={stats.quizHistory[2].score} color="up-red" icon="trending-up" />
+                        <StatCard title="Promedio Total" value={stats.avgTotal} color="up-gold" icon="award" />
+                        <StatCard title="Asistencia" value={`${stats.asistenciaPromedio}%`} color="up-blue" icon="calendar-check" />
                     </div>
                     
+                    {/* Gráficas principales */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <div className="bg-white p-6 shadow-sm border rounded-lg">
-                            <h3 className="text-xs font-black uppercase mb-6 text-up-blue flex items-center gap-2"><Icon name="brain" size={14} className="text-up-blue"/> Distribución Percepción (VAK)</h3>
+                        {/* VAK */}
+                        <div className="glass-card p-6 shadow-lg rounded-lg animate-slide">
+                            <h3 className="text-xs font-black uppercase mb-6 text-up-blue flex items-center gap-2">
+                                <Icon name="brain" size={14} className="text-up-blue"/> 
+                                Distribución Percepción (VAK)
+                            </h3>
                             <div className="h-64 flex items-center justify-center">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <PieChart>
                                         <Pie 
                                             data={stats.canalesData} 
-                                            dataKey="value" nameKey="name" 
-                                            cx="50%" cy="50%" 
-                                            innerRadius={50} outerRadius={80} 
+                                            dataKey="value" 
+                                            nameKey="name" 
+                                            cx="50%" 
+                                            cy="50%" 
+                                            innerRadius={50} 
+                                            outerRadius={80} 
                                             paddingAngle={5}
                                             label={({name, value}) => `${name}: ${value}`}
                                         >
-                                            <Cell fill={UP_BLUE} /><Cell fill={UP_RED} /><Cell fill={UP_GOLD} />
+                                            <Cell fill={UP_BLUE} />
+                                            <Cell fill={UP_RED} />
+                                            <Cell fill={UP_GOLD} />
                                         </Pie>
-                                        <Tooltip /><Legend verticalAlign="bottom" height={36}/>
+                                        <Tooltip />
+                                        <Legend verticalAlign="bottom" height={36}/>
                                     </PieChart>
                                 </ResponsiveContainer>
                             </div>
                         </div>
-                        <div className="bg-white p-6 shadow-sm border rounded-lg">
-                            <h3 className="text-xs font-black uppercase mb-6 text-up-blue flex items-center gap-2"><Icon name="trending-up" size={14} className="text-up-red"/> Evolución Académica Reales</h3>
+
+                        {/* Evolución */}
+                        <div className="glass-card p-6 shadow-lg rounded-lg animate-slide">
+                            <h3 className="text-xs font-black uppercase mb-6 text-up-blue flex items-center gap-2">
+                                <Icon name="trending-up" size={14} className="text-up-red"/> 
+                                Evolución Académica
+                            </h3>
                             <div className="h-64">
                                 <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={stats.quizHistory}>
-                                        <XAxis dataKey="name" tick={{fontSize: 10, fontWeight: 'bold'}} axisLine={false} tickLine={false} />
-                                        <YAxis domain={[0, 11000]} hide />
-                                        <Tooltip cursor={{fill: '#f8f9fa'}} />
-                                        <Bar dataKey="score" fill={UP_BLUE} radius={[4, 4, 0, 0]} barSize={60} label={{ position: 'top', fontSize: 10, fontWeight: 'bold' }} />
-                                    </BarChart>
+                                    <LineChart data={stats.quizHistory}>
+                                        <CartesianGrid strokeDasharray="3 3" />
+                                        <XAxis dataKey="name" tick={{fontSize: 10, fontWeight: 'bold'}} />
+                                        <YAxis domain={[0, 11000]} />
+                                        <Tooltip />
+                                        <Line type="monotone" dataKey="score" stroke={UP_BLUE} strokeWidth={3} dot={{ r: 6, fill: UP_BLUE }} />
+                                    </LineChart>
                                 </ResponsiveContainer>
                             </div>
                         </div>
                     </div>
 
+                    {/* Top 10 Ranking */}
+                    <div className="glass-card p-6 shadow-lg rounded-lg animate-fade">
+                        <h3 className="text-xs font-black uppercase mb-6 text-up-blue flex items-center gap-2">
+                            <Icon name="trophy" size={14} className="text-up-gold"/> 
+                            Top 10 Ranking Académico
+                        </h3>
+                        <div className="h-96">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={stats.quizRanking.slice(0, 10)} layout="vertical">
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis type="number" domain={[0, 30000]} />
+                                    <YAxis dataKey="name" type="category" width={80} tick={{fontSize: 10, fontWeight: 'bold'}} />
+                                    <Tooltip />
+                                    <Bar dataKey="score" fill={UP_BLUE} radius={[0, 4, 4, 0]} label={{ position: 'right', fontSize: 10, fontWeight: 'bold' }} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+
+                    {/* Fortalezas y Áreas de Mejora */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="bg-white p-6 shadow-sm border rounded-lg border-l-8 border-green-600">
-                            <h3 className="text-xs font-black uppercase mb-6 text-green-700">Top 3 Fortalezas (Grupo)</h3>
-                            <div className="space-y-4">
+                        <div className="glass-card p-6 shadow-lg rounded-lg border-l-8 border-green-600 animate-slide">
+                            <h3 className="text-xs font-black uppercase mb-6 text-green-700 flex items-center gap-2">
+                                <Icon name="check-circle" size={14} />
+                                Top 5 Fortalezas (Grupo)
+                            </h3>
+                            <div className="space-y-3">
                                 {stats.topAltas.map((item, i) => (
-                                    <div key={i} className="flex items-center justify-between">
+                                    <div key={i} className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
                                         <span className="text-sm font-bold text-gray-700 uppercase">{item.name}</span>
-                                        <span className="text-[10px] font-black text-green-700">{item.value} AL.</span>
+                                        <span className="text-xs font-black text-green-700 bg-green-200 px-3 py-1 rounded-full">{item.value} estudiantes</span>
                                     </div>
                                 ))}
                             </div>
                         </div>
-                        <div className="bg-white p-6 shadow-sm border rounded-lg border-l-8 border-up-red">
-                            <h3 className="text-xs font-black uppercase mb-6 text-up-red">Top 3 Áreas de Foco (Grupo)</h3>
-                            <div className="space-y-4">
+                        <div className="glass-card p-6 shadow-lg rounded-lg border-l-8 border-up-red animate-slide">
+                            <h3 className="text-xs font-black uppercase mb-6 text-up-red flex items-center gap-2">
+                                <Icon name="target" size={14} />
+                                Top 5 Áreas de Foco (Grupo)
+                            </h3>
+                            <div className="space-y-3">
                                 {stats.topBajas.map((item, i) => (
-                                    <div key={i} className="flex items-center justify-between">
+                                    <div key={i} className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
                                         <span className="text-sm font-bold text-gray-700 uppercase">{item.name}</span>
-                                        <span className="text-[10px] font-black text-up-red">{item.value} AL.</span>
+                                        <span className="text-xs font-black text-up-red bg-red-200 px-3 py-1 rounded-full">{item.value} estudiantes</span>
                                     </div>
                                 ))}
                             </div>
@@ -194,104 +534,304 @@
                 </div>
             );
 
+            // ============================================
+            // RENDER: LISTA DE ESTUDIANTES
+            // ============================================
             const renderLista = () => (
                 <div className="space-y-4 animate-fade pb-10">
-                    <div className="bg-white p-3 shadow-sm rounded-lg border flex items-center gap-3">
+                    {/* Búsqueda */}
+                    <div className="glass-card p-3 shadow-lg rounded-lg flex items-center gap-3">
                         <Icon name="search" size={18} className="text-gray-400" />
-                        <input type="text" placeholder="Buscar por apellido o apodo..." className="w-full outline-none text-sm" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}/>
+                        <input 
+                            type="text" 
+                            placeholder="Buscar por apellido o apodo..." 
+                            className="w-full outline-none text-sm bg-transparent" 
+                            value={searchTerm} 
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pb-10">
-                        {filteredStudents.map((s, idx) => (
-                            <div key={idx} onClick={() => { setSelectedStudent(s); setActiveTab('individual'); }} className="bg-white p-4 border rounded-lg shadow-sm flex justify-between items-center cursor-pointer hover:border-up-blue transition-all group active:scale-95">
-                                <div className="overflow-hidden">
-                                    <p className="font-bold text-sm text-gray-800 uppercase truncate">{s.nombre}</p>
-                                    <p className="text-[10px] text-up-red font-black uppercase italic">"{s.apodo}" • Total: {s.quizzes.reduce((a,b)=>a+b,0)}</p>
+
+                    {/* Filtros */}
+                    <Filters filters={filters} setFilters={setFilters} carreras={carreras} />
+
+                    {/* Controles */}
+                    <div className="flex flex-wrap gap-3 items-center justify-between">
+                        <div className="flex gap-2">
+                            <button 
+                                onClick={() => setCompareMode(!compareMode)}
+                                className={`px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 transition-all ${compareMode ? 'bg-up-blue text-white' : 'bg-white text-up-blue border border-up-blue'}`}
+                            >
+                                <Icon name="git-compare" size={16} />
+                                {compareMode ? 'Cancelar Comparar' : 'Comparar'}
+                            </button>
+                            {compareStudents.length === 2 && (
+                                <button className="px-4 py-2 bg-green-600 text-white rounded-lg font-bold text-sm">
+                                    {compareStudents.length} seleccionados
+                                </button>
+                            )}
+                        </div>
+                        <select 
+                            value={sortBy} 
+                            onChange={(e) => setSortBy(e.target.value)}
+                            className="px-3 py-2 border rounded-lg text-sm focus:outline-none focus:border-up-blue"
+                        >
+                            <option value="nombre">Ordenar por nombre</option>
+                            <option value="score">Ordenar por puntuación</option>
+                            <option value="asistencia">Ordenar por asistencia</option>
+                        </select>
+                    </div>
+
+                    {/* Lista de estudiantes */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {filteredStudents.map((s, idx) => {
+                            const totalScore = s.quizzes.reduce((a,b)=>a+b,0);
+                            const isSelected = compareStudents.find(cs => cs.nombre === s.nombre);
+                            
+                            return (
+                                <div 
+                                    key={idx} 
+                                    onClick={() => {
+                                        if (compareMode) {
+                                            handleCompare(s);
+                                        } else {
+                                            setSelectedStudent(s);
+                                            setActiveTab('individual');
+                                        }
+                                    }}
+                                    className={`glass-card p-4 rounded-lg shadow-lg student-card cursor-pointer transition-all ${isSelected ? 'border-2 border-green-600' : 'border border-gray-200'} ${compareMode ? 'hover:border-up-blue' : ''}`}
+                                >
+                                    <div className="flex justify-between items-start mb-3">
+                                        <div className="flex-1 overflow-hidden">
+                                            <p className="font-black text-sm text-gray-800 uppercase truncate">{s.nombre}</p>
+                                            <p className="text-[10px] text-up-red font-black uppercase italic">"{s.apodo}"</p>
+                                        </div>
+                                        <Icon name={compareMode ? "check-square" : "chevron-right"} size={18} className={`shrink-0 ${isSelected ? 'text-green-600' : 'text-gray-300'}`} />
+                                    </div>
+                                    
+                                    <div className="space-y-2 text-xs">
+                                        <div className="flex justify-between">
+                                            <span className="text-gray-500 font-bold">Total:</span>
+                                            <span className="font-black text-up-blue">{totalScore}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="text-gray-500 font-bold">Carrera:</span>
+                                            <span className="font-bold">{s.carrera}</span>
+                                        </div>
+                                        <div className="progress-bar">
+                                            <div className="progress-fill" style={{width: `${(totalScore / 30000) * 100}%`}}></div>
+                                        </div>
+                                    </div>
                                 </div>
-                                <Icon name="chevron-right" size={18} className="text-gray-300 group-hover:text-up-blue shrink-0" />
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
+
+                    {filteredStudents.length === 0 && (
+                        <div className="text-center py-20 text-gray-400">
+                            <Icon name="search-x" size={48} className="mx-auto mb-4 opacity-50" />
+                            <p className="font-bold">No se encontraron estudiantes</p>
+                        </div>
+                    )}
                 </div>
             );
 
+            // ============================================
+            // RENDER: PERFIL INDIVIDUAL
+            // ============================================
             const renderPerfil = () => {
-                if (!selectedStudent) return <div className="text-center py-20 animate-fade text-gray-400 uppercase text-[10px] font-black tracking-widest">Selecciona un alumno en Alumnos</div>;
+                if (!selectedStudent) {
+                    return (
+                        <div className="text-center py-20 animate-fade">
+                            <Icon name="user-x" size={64} className="mx-auto mb-4 text-gray-300" />
+                            <p className="text-gray-400 uppercase text-xs font-black tracking-widest">
+                                Selecciona un alumno en la pestaña "Alumnos"
+                            </p>
+                        </div>
+                    );
+                }
                 
                 const totalScore = selectedStudent.quizzes.reduce((a,b)=>a+b,0);
                 const maxS = Math.max(selectedStudent.v || 0, selectedStudent.k || 0, selectedStudent.a || 0);
                 const canalD = selectedStudent.v === maxS ? 'Visual' : (selectedStudent.k === maxS ? 'Kinestésico' : 'Auditivo');
                 const canalColor = canalD === 'Visual' ? 'bg-[#004b8d]' : (canalD === 'Kinestésico' ? 'bg-[#ce1126]' : 'bg-[#a68a56]');
+                const asistencias = selectedStudent.asistencia.filter(a => a === 'A').length;
 
                 return (
                     <div className="space-y-6 pb-20 animate-fade">
+                        {/* Botón volver */}
+                        <button 
+                            onClick={() => {setSelectedStudent(null); setActiveTab('busqueda');}}
+                            className="flex items-center gap-2 text-up-blue font-bold text-sm hover:underline"
+                        >
+                            <Icon name="arrow-left" size={16} />
+                            Volver a la lista
+                        </button>
+
                         {/* Identidad */}
-                        <div className="bg-white p-8 border shadow-sm border-t-8 border-up-blue rounded-b-lg text-center">
-                            <div className="w-24 h-24 up-blue text-white flex items-center justify-center text-4xl font-black mb-4 mx-auto shadow-xl">{selectedStudent.nombre[0]}</div>
-                            <h2 className="text-4xl font-black text-gray-800 uppercase tracking-tighter leading-tight">{selectedStudent.nombre}</h2>
+                        <div className="glass-card p-8 shadow-2xl border-t-8 border-up-blue rounded-b-lg text-center animate-scale">
+                            <div className="w-24 h-24 up-blue text-white flex items-center justify-center text-4xl font-black mb-4 mx-auto shadow-xl rounded-full">
+                                {selectedStudent.nombre[0]}
+                            </div>
+                            <h2 className="text-4xl font-black text-gray-800 uppercase tracking-tighter leading-tight">
+                                {selectedStudent.nombre}
+                            </h2>
                             <p className="text-up-red font-bold text-2xl mt-1 italic">"{selectedStudent.apodo}"</p>
                             <div className="flex flex-wrap justify-center gap-4 mt-6 border-t pt-6 w-full text-[10px] font-black uppercase text-gray-400">
-                                <span className={`text-white px-2 py-0.5 ${canalColor}`}>{canalD}</span>
-                                <span>{selectedStudent.carrera}</span>
-                                <span className="text-up-red font-bold tracking-tight">Acumulado Menti: {totalScore}</span>
+                                <span className={`text-white px-3 py-1 rounded-full ${canalColor}`}>{canalD}</span>
+                                <span className="px-3 py-1 bg-gray-100 rounded-full">{selectedStudent.carrera}</span>
+                                <span className="text-up-red font-bold tracking-tight px-3 py-1 bg-red-50 rounded-full">
+                                    Total: {totalScore}
+                                </span>
                             </div>
                         </div>
 
-                        {/* Asistencia Semanal */}
-                        <div className="bg-white p-5 border shadow-sm rounded-lg border-l-8 border-up-blue">
-                            <h3 className="text-[11px] font-black uppercase text-up-blue mb-4 border-b pb-1">Seguimiento de Asistencia (S1-S4)</h3>
-                            <div className="flex justify-between md:justify-around text-center">
-                                {selectedStudent.asistencia.map((status, i) => (
-                                    <div key={i}>
-                                        <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest">Sem 0{i+1}</p>
-                                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold text-sm shadow-sm ${status==='A'?'bg-green-100 text-green-700':status==='F'?'bg-red-100 text-red-700':'bg-yellow-100 text-yellow-700'}`}>{status}</div>
+                        {/* Rendimiento y Asistencia */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Quizzes por sesión */}
+                            <div className="glass-card p-6 shadow-lg rounded-lg border-l-8 border-up-blue animate-slide">
+                                <h3 className="text-[11px] font-black uppercase text-up-blue mb-4 flex items-center gap-2">
+                                    <Icon name="bar-chart" size={14} />
+                                    Rendimiento por Sesión
+                                </h3>
+                                <div className="space-y-3">
+                                    {selectedStudent.quizzes.map((score, i) => (
+                                        <div key={i}>
+                                            <div className="flex justify-between mb-1">
+                                                <span className="text-xs font-bold text-gray-600">Sesión {i + 1}</span>
+                                                <span className="text-xs font-black text-up-blue">{score}</span>
+                                            </div>
+                                            <div className="progress-bar">
+                                                <div className="progress-fill" style={{width: `${(score / 11000) * 100}%`}}></div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Asistencia */}
+                            <div className="glass-card p-6 shadow-lg rounded-lg border-l-8 border-green-600 animate-slide">
+                                <h3 className="text-[11px] font-black uppercase text-green-700 mb-4 flex items-center gap-2">
+                                    <Icon name="calendar-check" size={14} />
+                                    Asistencia ({asistencias}/4)
+                                </h3>
+                                <div className="grid grid-cols-4 gap-3">
+                                    {selectedStudent.asistencia.map((status, i) => (
+                                        <div key={i} className="text-center">
+                                            <p className="text-[8px] font-black text-gray-400 uppercase mb-2">S{i+1}</p>
+                                            <div className={`w-full h-16 rounded-lg flex items-center justify-center font-black text-xl shadow-md ${
+                                                status==='A' ? 'bg-green-100 text-green-700' : 
+                                                status==='F' ? 'bg-red-100 text-red-700' : 
+                                                'bg-yellow-100 text-yellow-700'
+                                            }`}>
+                                                {status}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Identidad académica */}
+                        <div className="glass-card p-6 shadow-lg rounded-lg border-l-8 border-up-gold animate-slide">
+                            <h3 className="text-[11px] font-black uppercase text-up-gold mb-5 flex items-center gap-2">
+                                <Icon name="star" size={16} /> 
+                                Identidad Académica
+                            </h3>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="p-4 bg-yellow-50 rounded-lg">
+                                    <p className="text-[10px] font-black text-up-gold uppercase mb-2">Pasatiempo Favorito</p>
+                                    <p className="font-bold text-sm">{selectedStudent.hobbie}</p>
+                                </div>
+                                <div className="p-4 bg-yellow-50 rounded-lg">
+                                    <p className="text-[10px] font-black text-up-gold uppercase mb-2">Es un crack para</p>
+                                    <p className="font-bold text-sm">{selectedStudent.crack}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Competencias - Diagnóstico cruzado */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Percepción propia */}
+                            <div className="glass-card p-6 shadow-lg border-l-4 border-green-600 rounded-lg animate-slide">
+                                <h3 className="text-[11px] font-black uppercase text-green-700 mb-4 flex items-center gap-2">
+                                    <Icon name="user-check" size={16} /> 
+                                    Percepción Propia (Top 3)
+                                </h3>
+                                <div className="space-y-2">
+                                    {selectedStudent.altasPropia.slice(0,3).map((c, i) => (
+                                        <div key={i} className="bg-green-50 p-3 border-l-4 border-green-600 font-bold text-xs uppercase text-gray-800">
+                                            {i + 1}. {c}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Wingfinder */}
+                            <div className="glass-card p-6 shadow-lg border-l-4 border-up-gold rounded-lg animate-slide">
+                                <h3 className="text-[11px] font-black uppercase text-up-gold mb-4 flex items-center gap-2">
+                                    <Icon name="award" size={16} /> 
+                                    Wingfinder Test
+                                </h3>
+                                {selectedStudent.wingfinder.length > 0 ? (
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {selectedStudent.wingfinder.map((c, i) => (
+                                            <div key={i} className="bg-yellow-50 p-3 border border-yellow-200 font-bold text-[10px] uppercase text-gray-800 rounded text-center">
+                                                {c}
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="bg-gray-50 p-4 rounded text-center text-gray-400 text-sm italic">
+                                        No disponible
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Áreas de oportunidad */}
+                        <div className="glass-card p-6 shadow-lg border-l-4 border-up-red rounded-lg animate-slide">
+                            <h3 className="text-[11px] font-black uppercase text-up-red mb-4 flex items-center gap-2">
+                                <Icon name="target" size={16} /> 
+                                Áreas de Oportunidad (3)
+                            </h3>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                {selectedStudent.bajas.slice(0,3).map((c, i) => (
+                                    <div key={i} className="bg-red-50 p-4 border-l-4 border-up-red font-bold text-xs uppercase text-gray-800 text-center flex items-center justify-center min-h-[60px]">
+                                        {c}
                                     </div>
                                 ))}
                             </div>
                         </div>
 
-                        <div className="bg-white p-6 border shadow-sm rounded-lg border-l-8 border-up-gold">
-                            <h3 className="text-[11px] font-black uppercase text-up-gold mb-5 flex items-center gap-2 border-b pb-2"><Icon name="star" size={16} /> Identidad Académica</h3>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-medium">
-                                <p><span className="font-black text-up-blue uppercase block mb-1">Pasatiempo favorito:</span> {selectedStudent.hobbie}</p>
-                                <p><span className="font-black text-up-red uppercase block mb-1">Es un crack para:</span> {selectedStudent.crack}</p>
-                            </div>
-                        </div>
-
-                        {/* CONTRASTE DIAGNÓSTICO */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="bg-white p-6 border shadow-sm border-l-4 border-green-600 rounded-lg">
-                                <h3 className="text-[11px] font-black uppercase text-green-700 mb-4 tracking-[2px] flex items-center gap-2"><Icon name="user-check" size={16} /> Percepción Propia (Top 3)</h3>
-                                <div className="space-y-2">
-                                    {selectedStudent.altasPropia.slice(0,3).map((c, i) => (
-                                        <div key={i} className="bg-green-50 p-3 border-l-4 border-green-600 font-black text-xs uppercase text-gray-800">{c}</div>
-                                    ))}
-                                </div>
-                            </div>
-                            <div className="bg-white p-6 border shadow-sm border-l-4 border-up-gold rounded-lg">
-                                <h3 className="text-[11px] font-black uppercase text-up-gold mb-4 tracking-[2px] flex items-center gap-2"><Icon name="award" size={16} /> Wingfinder Test (Top 4)</h3>
-                                <div className="grid grid-cols-1 gap-2">
-                                    {selectedStudent.wingfinder.slice(0,4).map((c, i) => (
-                                        <div key={i} className="bg-yellow-50 p-3 border border-yellow-100 font-black text-[10px] uppercase text-gray-800 rounded-sm text-center">{c}</div>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* DEBILIDADES */}
-                        <div className="bg-white p-6 border shadow-sm border-l-4 border-up-red rounded-lg">
-                            <h3 className="text-[11px] font-black uppercase text-up-red mb-4 tracking-[2px] flex items-center gap-2"><Icon name="target" size={16} /> Áreas de Oportunidad (3)</h3>
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                {selectedStudent.bajas.slice(0,3).map((c, i) => (
-                                    <div key={i} className="bg-red-50 p-3 border-l-4 border-up-red font-black text-xs uppercase text-gray-800 truncate text-center flex items-center justify-center leading-none min-h-[40px]">{c}</div>
+                        {/* Valores personales */}
+                        <div className="glass-card p-6 shadow-lg rounded-lg animate-slide">
+                            <h3 className="text-[11px] font-black uppercase text-up-blue mb-4 flex items-center gap-2">
+                                <Icon name="heart" size={16} /> 
+                                Valores Personales
+                            </h3>
+                            <div className="flex flex-wrap gap-3">
+                                {selectedStudent.valores.map((v, i) => (
+                                    <span key={i} className="px-4 py-2 bg-blue-50 text-up-blue font-bold text-xs uppercase rounded-full border-2 border-up-blue">
+                                        {v}
+                                    </span>
                                 ))}
                             </div>
                         </div>
 
-                        {/* Estrategia Final */}
-                        <div className="bg-gray-900 text-white p-10 border-t-8 border-up-red shadow-2xl rounded-lg">
-                            <h3 className="text-xl font-black uppercase tracking-tighter mb-4 text-up-gold flex items-center gap-3"><Icon name="zap" size={20} className="text-up-gold" /> Estrategia Docente Táctica</h3>
+                        {/* Estrategia docente */}
+                        <div className="bg-gradient-to-br from-gray-900 to-gray-800 text-white p-10 shadow-2xl rounded-lg animate-scale">
+                            <h3 className="text-2xl font-black uppercase tracking-tighter mb-6 text-up-gold flex items-center gap-3">
+                                <Icon name="zap" size={24} className="text-up-gold" /> 
+                                Estrategia Docente Táctica
+                            </h3>
+                            <p className="text-base font-light leading-relaxed mb-4">
+                                El diagnóstico cruzado sugiere potenciar <strong className="text-white font-bold uppercase">{selectedStudent.altasPropia[0]}</strong>
+                                {selectedStudent.wingfinder.length > 0 && (
+                                    <> vinculándola con la fortaleza detectada en el test: <strong className="text-up-gold font-bold uppercase">{selectedStudent.wingfinder[0]}</strong>.</>
+                                )}
+                            </p>
                             <p className="text-base font-light leading-relaxed">
-                                El diagnóstico cruzado sugiere potenciar <strong className="text-white uppercase">{selectedStudent.altasPropia[0]}</strong> vinculándola con la fortaleza detectada en el test: <strong className="text-up-gold uppercase">{selectedStudent.wingfinder[0]}</strong>. Al ser un perfil <strong className="text-up-gold uppercase">{canalD}</strong>, se recomienda dar feedback {canalD === 'Visual' ? 'mediante diagramas estructurados' : 'a través de aplicaciones prácticas'}, apelando a su valor de <strong className="text-white">{selectedStudent.valores[0]}</strong>.
+                                Al ser un perfil <strong className="text-up-gold font-bold uppercase">{canalD}</strong>, se recomienda dar feedback {canalD === 'Visual' ? 'mediante diagramas estructurados y presentaciones visuales' : canalD === 'Kinestésico' ? 'a través de aplicaciones prácticas y ejercicios hands-on' : 'con explicaciones verbales claras y discusiones'}, apelando a su valor de <strong className="text-white font-bold">{selectedStudent.valores[0]}</strong>.
                             </p>
                         </div>
                     </div>
@@ -300,21 +840,84 @@
 
             return (
                 <div className="min-h-screen flex flex-col pb-10">
-                    <header className="bg-white border-b-2 border-up-blue sticky top-0 z-50 p-4 shadow-md flex justify-between items-center">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 up-blue text-white flex items-center justify-center font-black text-lg shadow rounded-sm shrink-0">UP</div>
-                            <div className="hidden sm:block text-[10px] font-black text-up-blue uppercase tracking-tight leading-none">Competencias Directivas<br/><span className="text-up-red text-[8px]">Universidad Panamericana</span></div>
-                        </div>
-                        <div className="flex bg-gray-100 p-1 rounded-lg">
-                            <button onClick={() => setActiveTab('resumen')} className={`px-4 py-2 rounded-md transition-all flex items-center gap-2 ${activeTab === 'resumen' ? 'bg-white text-up-blue shadow-md' : 'text-gray-400'}`}><Icon name="bar-chart-3" /></button>
-                            <button onClick={() => setActiveTab('busqueda')} className={`px-4 py-2 rounded-md transition-all flex items-center gap-2 ${activeTab === 'busqueda' ? 'bg-white text-up-blue shadow-md' : 'text-gray-400'}`}><Icon name="users" /></button>
-                            <button onClick={() => setActiveTab('individual')} className={`px-4 py-2 rounded-md transition-all flex items-center gap-2 ${activeTab === 'individual' ? 'bg-white text-up-blue shadow-md' : 'text-gray-400'}`}><Icon name="user" /></button>
+                    {/* Header */}
+                    <header className="glass-card border-b-2 border-up-blue sticky top-0 z-50 p-4 shadow-xl no-print">
+                        <div className="flex justify-between items-center max-w-7xl mx-auto">
+                            <div className="flex items-center gap-3">
+                                <div className="w-12 h-12 up-blue text-white flex items-center justify-center font-black text-xl shadow-lg rounded-lg shrink-0">
+                                    UP
+                                </div>
+                                <div className="hidden sm:block">
+                                    <p className="text-[11px] font-black text-up-blue uppercase tracking-tight leading-none">
+                                        Competencias Directivas
+                                    </p>
+                                    <p className="text-up-red text-[9px] font-bold">
+                                        Universidad Panamericana • v10 (10-Feb-26)
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <div className="flex items-center gap-3">
+                                <div className="hidden md:flex bg-gray-100 p-1 rounded-lg shadow-inner">
+                                    <button 
+                                        onClick={() => {setActiveTab('resumen'); setSelectedStudent(null);}} 
+                                        className={`px-4 py-2 rounded-md transition-all flex items-center gap-2 font-bold text-sm ${activeTab === 'resumen' ? 'bg-white text-up-blue shadow-md' : 'text-gray-400'}`}
+                                    >
+                                        <Icon name="bar-chart-3" size={16} />
+                                        <span className="hidden lg:inline">Resumen</span>
+                                    </button>
+                                    <button 
+                                        onClick={() => {setActiveTab('busqueda'); setSelectedStudent(null);}} 
+                                        className={`px-4 py-2 rounded-md transition-all flex items-center gap-2 font-bold text-sm ${activeTab === 'busqueda' ? 'bg-white text-up-blue shadow-md' : 'text-gray-400'}`}
+                                    >
+                                        <Icon name="users" size={16} />
+                                        <span className="hidden lg:inline">Alumnos</span>
+                                    </button>
+                                    <button 
+                                        onClick={() => setActiveTab('individual')} 
+                                        className={`px-4 py-2 rounded-md transition-all flex items-center gap-2 font-bold text-sm ${activeTab === 'individual' ? 'bg-white text-up-blue shadow-md' : 'text-gray-400'}`}
+                                    >
+                                        <Icon name="user" size={16} />
+                                        <span className="hidden lg:inline">Individual</span>
+                                    </button>
+                                </div>
+
+                                {/* Mobile nav */}
+                                <div className="md:hidden flex gap-2">
+                                    <button onClick={() => {setActiveTab('resumen'); setSelectedStudent(null);}} className={`p-2 rounded ${activeTab === 'resumen' ? 'bg-up-blue text-white' : 'text-gray-400'}`}>
+                                        <Icon name="bar-chart-3" size={20} />
+                                    </button>
+                                    <button onClick={() => {setActiveTab('busqueda'); setSelectedStudent(null);}} className={`p-2 rounded ${activeTab === 'busqueda' ? 'bg-up-blue text-white' : 'text-gray-400'}`}>
+                                        <Icon name="users" size={20} />
+                                    </button>
+                                    <button onClick={() => setActiveTab('individual')} className={`p-2 rounded ${activeTab === 'individual' ? 'bg-up-blue text-white' : 'text-gray-400'}`}>
+                                        <Icon name="user" size={20} />
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </header>
-                    <main className="max-w-5xl mx-auto w-full p-4 md:p-8 flex-grow">
-                        {activeTab === 'resumen' && renderResumen()}{activeTab === 'busqueda' && renderLista()}{activeTab === 'individual' && renderPerfil()}
+
+                    {/* Main content */}
+                    <main className="max-w-7xl mx-auto w-full p-4 md:p-8 flex-grow">
+                        {activeTab === 'resumen' && renderResumen()}
+                        {activeTab === 'busqueda' && renderLista()}
+                        {activeTab === 'individual' && renderPerfil()}
                     </main>
-                    <footer className="text-center py-6 text-[9px] font-black uppercase text-gray-300 tracking-[4px]">Ubi spiritus, libertas • Facultad de Empresariales • © 2026</footer>
+
+                    {/* Footer */}
+                    <footer className="text-center py-8 text-[9px] font-black uppercase text-gray-400 tracking-[4px] no-print">
+                        Ubi spiritus, libertas • Facultad de Empresariales • © 2026
+                    </footer>
+
+                    {/* Comparador modal */}
+                    {compareStudents.length === 2 && (
+                        <StudentComparison 
+                            student1={compareStudents[0]} 
+                            student2={compareStudents[1]} 
+                            onClose={resetCompare} 
+                        />
+                    )}
                 </div>
             );
         };
