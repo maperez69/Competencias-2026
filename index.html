@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UP - Competencias Directivas (v6.4)</title>
+    <title>UP - Competencias Directivas (v8.5)</title>
     <!-- Scripts de React, Prop-Types y Gráficas -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -35,47 +35,42 @@
         const { useState, useMemo, useEffect } = React;
         const { 
             BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, 
-            ResponsiveContainer, PieChart, Pie, Cell, RadarChart, 
-            PolarGrid, PolarAngleAxis, Radar 
+            ResponsiveContainer, PieChart, Pie, Cell 
         } = window.Recharts;
 
-        // Base de Datos Oficial 24 Alumnos - Orden Alfabético por Apellido
-        // Datos Menti S1 (27-ene) y S2 (03-feb) extraídos estrictamente del PDF Acumulado
+        // Base de Datos Oficial Auditada Sesión por Sesión - 24 Alumnos
+        // Menti S1 (27-ene), S2 (03-feb), S3 (10-feb)
         const rawData = [
-            { nombre: "Álvarez Justo Alberto", quizzes: [8034, 0], carrera: "Finanzas", apodo: "Alberto", hobbie: "Carreras Coches", crack: "Negociar", altas: ["Negociación", "Liderazgo", "Comunicación"], bajas: ["Administración del tiempo", "Manejo de estrés", "Delegación"], valores: ["Autocontrol", "Lealtad", "Seguridad"], v: 8, k: 4, a: 3 },
-            { nombre: "Arana López Emilio", quizzes: [5256, 0], carrera: "Contabilidad", apodo: "Emilio", hobbie: "Padel", crack: "GOLF", altas: ["Liderazgo", "Administración del tiempo", "Comunicación"], bajas: ["Manejo de estrés", "Comunicación asertiva", "Gestión del tiempo"], valores: ["Divertirse", "Armonía", "Organización"], v: 3, k: 11, a: 1 },
-            { nombre: "Castro Leo Axel Patricio", quizzes: [8964, 9975], carrera: "Finanzas", apodo: "Axel", hobbie: "Series / GYM", crack: "Matemáticas Financieras", altas: ["Liderazgo", "Trabajo en equipo", "Pensamiento crítico"], bajas: ["Inteligencia emocional", "Manejo del estrés", "Comunicación"], valores: ["Autocontrol", "Respeto", "Perseverancia"], v: 5, k: 4, a: 6 },
-            { nombre: "Cruzado García Emiliano", quizzes: [7995, 7113], carrera: "Contabilidad", apodo: "Emiliano", hobbie: "Ejercicio Hyrox", crack: "Cacería", altas: ["Manejo de estrés", "Liderazgo", "Trabajo en equipo"], bajas: ["Reuniones efectivas", "Negociación", "Planeación"], valores: ["Divertirse", "Lealtad", "Puntualidad"], v: 6, k: 4, a: 5 },
-            { nombre: "Duarte Villa María José", quizzes: [8363, 9432], carrera: "Cyberseguridad", apodo: "MAJO", hobbie: "Cine / Tejer", crack: "Cocinando", altas: ["Liderazgo", "Pensamiento Crítico", "Reuniones efectivas"], bajas: ["Negociación", "Inteligencia emocional", "Manejo del estrés"], valores: ["Autocontrol", "Integridad", "Organización"], v: 5, k: 5, a: 5 },
-            { nombre: "Gaytán Ruiz David", quizzes: [8106, 8074], carrera: "Finanzas", apodo: "David", hobbie: "Tenis (Club Coyoacán)", crack: "Finanzas", altas: ["Inteligencia emocional", "Negociación", "Liderazgo"], bajas: ["Gestión del cambio", "Administración del tiempo", "Manejo del estrés"], valores: ["Liderazgo", "Perseverancia", "Integridad"], v: 5, k: 6, a: 4 },
-            { nombre: "Gutiérrez Velázquez Roberto", quizzes: [6652, 4229], carrera: "Finanzas", apodo: "Roberto", hobbie: "Tenis", crack: "Golf", altas: ["Liderazgo", "Toma de decisiones", "Negociación"], bajas: ["Gestión del cambio", "Empatía", "Comunicación"], valores: ["Lealtad", "Congruencia", "Liderazgo"], v: 5, k: 5, a: 5 },
-            { nombre: "Hernández Rodríguez Luis Felipe", quizzes: [8637, 9102], carrera: "Contabilidad", apodo: "Felipe", hobbie: "Leer / GYM", crack: "Manejar", altas: ["Disciplina", "Liderazgo", "Responsabilidad"], bajas: ["Negociación", "Delegación", "Inteligencia emocional"], valores: ["Autocontrol", "Respeto", "Comunicación"], v: 5, k: 1, a: 6 },
-            { nombre: "López Bravo Ana Camila", quizzes: [0, 0], carrera: "Finanzas", apodo: "Camila", hobbie: "Pilates", crack: "Pilates", altas: ["Empatía", "Colaboración", "Escucha activa"], bajas: ["Manejo de estrés", "Inteligencia emocional", "Comunicación asertiva"], valores: ["Respeto", "Empatía", "Humildad"], v: 6, k: 4, a: 5 },
-            { nombre: "López Iglesias Daniel", quizzes: [8579, 9042], carrera: "Finanzas", apodo: "Daniel", hobbie: "GYM", crack: "Basket", altas: ["Trabajo en equipo", "Liderazgo", "Inteligencia emocional"], bajas: ["Manejo del estrés", "Negociación", "Gestión del cambio"], valores: ["Bienestar", "Armonía", "Perseverancia"], v: 6, k: 4, a: 5 },
-            { nombre: "López Palacios Emiliano", quizzes: [5926, 3168], carrera: "Negocios", apodo: "Emiliano", hobbie: "GYM", crack: "Soccer", altas: ["Inteligencia emocional", "Trabajo en equipo", "Pensamiento crítico"], bajas: ["Negociación", "Manejo de estrés", "Gestión del cambio"], valores: ["Puntualidad", "Justicia", "Respeto"], v: 5, k: 4, a: 6 },
-            { nombre: "López Vázquez Emilio Rogelio", quizzes: [6711, 5211], carrera: "RRHH", apodo: "ROGER", hobbie: "Videojuegos", crack: "Atletismo", altas: ["Pensamiento crítico", "Inteligencia emocional", "Liderazgo"], bajas: ["Negociación", "Manejo de estrés", "Comunicación"], valores: ["Congruencia", "Justicia", "Lealtad"], v: 4, k: 8, a: 3 },
-            { nombre: "Márquez Padilla Alcántara José Andrés", quizzes: [8402, 7634], carrera: "Ingeniería", apodo: "Andrés", hobbie: "Idiomas", crack: "Ajedrez", altas: ["Pensamiento crítico", "Resolución de problemas", "Análisis"], bajas: ["Comunicación", "Delegación", "Trabajo en equipo"], valores: ["Integridad", "Servicio", "Responsabilidad"], v: 5, k: 5, a: 5 },
-            { nombre: "Montoya Alanis Alan", quizzes: [6900, 8056], carrera: "Finanzas", apodo: "Alan", hobbie: "Pesas", crack: "Carisma", altas: ["Inteligencia emocional", "Negociación", "Empatía"], bajas: ["Gestión del cambio", "Manejo de estrés", "Administración del tiempo"], valores: ["Liderazgo", "Determinación", "Empatía"], v: 5, k: 4, a: 6 },
-            { nombre: "Mújica García Emilio", quizzes: [5800, 7921], carrera: "Finanzas", apodo: "Emilio", hobbie: "Videojuegos", crack: "Sociable", altas: ["Empatía", "Adaptabilidad", "Sociabilidad"], bajas: ["Manejo de estrés", "Organización", "Planeación"], valores: ["Empatía", "Perdón", "Perseverancia"], v: 4, k: 6, a: 5 },
-            { nombre: "Novelo Salomón Ana Amelie", quizzes: [8100, 5500], carrera: "Negocios", apodo: "Amelie", hobbie: "Cine", crack: "Basket", altas: ["Gestión del cambio", "Liderazgo", "Manejo de estrés"], bajas: ["Autocontrol", "Comunicación", "Delegación"], valores: ["Lealtad", "Perseverancia", "Puntualidad"], v: 7, k: 6, a: 2 },
-            { nombre: "Núñez Castañeda Natalia", quizzes: [8375, 7497], carrera: "Mecatrónica", apodo: "Natalia", hobbie: "LEGOS", crack: "Idiomas", altas: ["Liderazgo", "Reuniones efectivas", "Trabajo en equipo"], bajas: ["Manejo de estrés", "Negociación", "Delegación"], valores: ["Alegría", "Amistad", "Determinación"], v: 6, k: 6, a: 4 },
-            { nombre: "Perez Varela Ana Cecilia", quizzes: [0, 6988], carrera: "Mercadotecnia", apodo: "AnaCecy", hobbie: "Tés", crack: "Cocina", altas: ["Administración de tiempo", "Inteligencia emocional", "Liderazgo"], bajas: ["Negociación", "Manejo de estrés", "Trabajo en equipo"], valores: ["Empatía", "Respeto", "Puntualidad"], v: 7, k: 6, a: 2 },
-            { nombre: "Said Pérez José Ignacio", quizzes: [0, 6544], carrera: "Contabilidad", apodo: "Ignacio", hobbie: "Beisbol", crack: "Beisbol", altas: ["Inteligencia emocional", "Liderazgo", "Gestión del cambio"], bajas: ["Manejo de estrés", "Comunicación asertiva", "Administración del tiempo"], valores: ["Empatía", "Disciplina", "Perseverancia"], v: 6, k: 8, a: 5 },
-            { nombre: "Salas Rubio Ian Trett", quizzes: [8893, 8728], carrera: "Negocios", apodo: "IAN", hobbie: "Videojuegos", crack: "Improvisación", altas: ["Inteligencia emocional", "Trabajo en equipo", "Pensamiento crítico"], bajas: ["Negociación", "Gestión del cambio", "Liderazgo"], valores: ["Empatía", "Disciplina", "Lealtad"], v: 6, k: 8, a: 5 },
-            { nombre: "Sarabia González Fatima Daniela", quizzes: [8783, 8255], carrera: "Finanzas", apodo: "Daniela", hobbie: "Música", crack: "Lectura Emociones", altas: ["Inteligencia emocional", "Administración del tiempo", "Autogestión"], bajas: ["Gestión del cambio", "Negociación", "Delegación"], valores: ["Alegría", "Lealtad", "Autoestima"], v: 7, k: 2, a: 6 },
-            { nombre: "Torres Landa Lozano Patricio", quizzes: [8378, 0], carrera: "Mercadotecnia", apodo: "Patricio", hobbie: "Tocho", crack: "Videojuegos", altas: ["Liderazgo", "Trabajo en equipo", "Comunicación"], bajas: ["Gestión del cambio", "Negociación", "Delegación"], valores: ["Autoestima", "Respeto", "Iniciativa"], v: 3, k: 5, a: 7 },
-            { nombre: "Vazquez Paniagua Macias Juan Manuel", quizzes: [8713, 7874], carrera: "Mecatrónica", apodo: "JUAN", hobbie: "Videojuegos", crack: "Programación", altas: ["Pensamiento Crítico", "Trabajo en equipo", "Inteligencia emocional"], bajas: ["Liderazgo", "Manejo de estrés", "Negociación"], valores: ["Determinación", "Congruencia", "Responsabilidad"], v: 4, k: 3, a: 8 },
-            { nombre: "Verdura Basañez Marc", quizzes: [8910, 8896], carrera: "Negocios", apodo: "Marc", crack: "Negociación", altas: ["Negociación", "Estrategia", "Liderazgo"], bajas: ["Delegación", "Administración del tiempo", "Manejo de estrés"], valores: ["Respeto", "Excelencia", "Disciplina"], v: 5, k: 5, a: 5 }
+            { nombre: "Álvarez Justo Alberto", quizzes: [8034, 0, 0], asistencia: ['A','A','F','F'], carrera: "Finanzas", apodo: "Alberto", hobbie: "Carreras Coches", crack: "Negociar", altasPropia: ["Negociación", "Liderazgo", "Comunicación"], bajas: ["Administración del tiempo", "Manejo de estrés", "Delegación"], wingfinder: ["Analítico", "Disciplinado", "Liderazgo", "Objetivo"], valores: ["Autocontrol", "Lealtad", "Seguridad"], v: 8, k: 4, a: 3 },
+            { nombre: "Arana López Emilio", quizzes: [5256, 0, 6326], asistencia: ['I','A','F','A'], carrera: "Contabilidad", apodo: "Emilio", hobbie: "Padel", crack: "GOLF", altasPropia: ["Liderazgo", "Administración del tiempo", "Manejo de estrés"], bajas: ["Gestión del tiempo", "Comunicación asertiva", "Orden"], wingfinder: ["Sociable", "Paciente", "Relajado", "Independiente"], valores: ["Divertirse", "Armonía", "Organización"], v: 3, k: 11, a: 1 },
+            { nombre: "Castro Leo Axel Patricio", quizzes: [8964, 9975, 7997], asistencia: ['A','A','A','A'], carrera: "Finanzas", apodo: "Axel", hobbie: "Series / GYM", crack: "Matemáticas Financieras", altasPropia: ["Liderazgo", "Trabajo en equipo", "Pensamiento crítico"], bajas: ["Inteligencia emocional", "Manejo del estrés", "Reuniones"], wingfinder: ["Directo", "Autónomo", "Reservado", "Independiente"], valores: ["Autocontrol", "Respeto", "Perseverancia"], v: 5, k: 4, a: 6 },
+            { nombre: "Cruzado García Emiliano", quizzes: [7995, 7113, 7954], asistencia: ['A','A','A','A'], carrera: "Contabilidad", apodo: "Emiliano", hobbie: "Ejercicio Hyrox", crack: "Cacería", altasPropia: ["Manejo de estrés", "Liderazgo", "Trabajo en equipo"], bajas: ["Reuniones efectivas", "Negociación", "Planeación"], wingfinder: ["Paciente", "Creatividad", "Relajado", "Pragmático"], valores: ["Divertirse", "Lealtad", "Puntualidad"], v: 6, k: 4, a: 5 },
+            { nombre: "Duarte Villa María José", quizzes: [8363, 9432, 8497], asistencia: ['A','A','A','A'], carrera: "Cyberseguridad", apodo: "MAJO", hobbie: "Cine / Tejer", crack: "Cocinando", altasPropia: ["Liderazgo", "Pensamiento Crítico", "Reuniones efectivas"], bajas: ["Negociación", "Inteligencia emocional", "Gestión del cambio"], wingfinder: ["Modesta", "Autónoma", "Paciente", "Relajada"], valores: ["Autocontrol", "Integridad", "Organización"], v: 5, k: 5, a: 5 },
+            { nombre: "Gaytán Ruiz David", quizzes: [8106, 8074, 8703], asistencia: ['A','A','A','A'], carrera: "Finanzas", apodo: "David", hobbie: "Tenis", crack: "Finanzas", altasPropia: ["Inteligencia emocional", "Negociación", "Liderazgo"], bajas: ["Gestión del cambio", "Administración del tiempo", "Manejo de estrés"], wingfinder: ["Directo", "Autónomo", "Pragmático", "Independiente"], valores: ["Liderazgo", "Perseverancia", "Integridad"], v: 5, k: 6, a: 4 },
+            { nombre: "Gutiérrez Velázquez Roberto", quizzes: [6652, 4229, 4680], asistencia: ['A','A','A','A'], carrera: "Finanzas", apodo: "Roberto", hobbie: "Tenis", crack: "Golf", altasPropia: ["Liderazgo", "Toma de decisiones", "Negociación"], bajas: ["Gestión del cambio", "Comunicación", "Empatía"], wingfinder: ["Directo", "Paciente", "Pragmático", "Sociable"], valores: ["Lealtad", "Congruencia", "Liderazgo"], v: 5, k: 5, a: 5 },
+            { nombre: "Hernández Rodríguez Luis Felipe", quizzes: [8637, 9102, 10284], asistencia: ['F','A','A','A'], carrera: "Contabilidad", apodo: "Felipe", hobbie: "Leer / GYM", crack: "Manejar", altasPropia: ["Disciplina", "Liderazgo", "Organización"], bajas: ["Negociación", "Inteligencia emocional", "Delegación"], wingfinder: ["Reservado", "Diligente", "Relajado", "Intuitivo"], valores: ["Autocontrol", "Respeto", "Comunicación"], v: 5, k: 1, a: 6 },
+            { nombre: "López Bravo Ana Camila", quizzes: [0, 0, 6409], asistencia: ['A','A','A','I'], carrera: "Finanzas", apodo: "Camila", hobbie: "Pilates", crack: "Pilates", altasPropia: ["Empatía", "Colaboración", "Escucha activa"], bajas: ["Manejo de estrés", "Inteligencia emocional", "Comunicación asertiva"], wingfinder: ["Empatía", "Escucha activa", "Colaboración", "Soporte"], valores: ["Respeto", "Empatía", "Humildad"], v: 6, k: 4, a: 5 },
+            { nombre: "López Iglesias Daniel", quizzes: [8579, 9042, 8022], asistencia: ['X','A','A','A'], carrera: "Finanzas", apodo: "Daniel", hobbie: "GYM", crack: "Basket", altasPropia: ["Trabajo en equipo", "Liderazgo", "Inteligencia emocional"], bajas: ["Manejo del estrés", "Negociación", "Gestión del cambio"], wingfinder: ["Paciente", "Autónomo", "Soporte", "Atento"], valores: ["Bienestar", "Armonía", "Perseverancia"], v: 6, k: 4, a: 5 },
+            { nombre: "López Palacios Emiliano", quizzes: [5926, 3168, 5970], asistencia: ['A','A','A','I'], carrera: "Negocios", apodo: "Emiliano", hobbie: "GYM / Soccer", crack: "Soccer", altasPropia: ["Inteligencia emocional", "Trabajo en equipo", "Pensamiento crítico"], bajas: ["Negociación", "Manejo de estrés", "Gestión del cambio"], wingfinder: ["Directo", "Pragmático", "Balance", "Intuitivo"], valores: ["Puntualidad", "Justicia", "Respeto"], v: 5, k: 4, a: 6 },
+            { nombre: "López Vázquez Emilio Rogelio", quizzes: [8325, 0, 7793], asistencia: ['A','A','F','A'], carrera: "RRHH", apodo: "ROGER", hobbie: "Videojuegos", crack: "Atletismo", altasPropia: ["Pensamiento crítico", "Inteligencia emocional", "Liderazgo"], bajas: ["Negociación", "Manejo de estrés", "Comunicación"], wingfinder: ["Centrado", "Pragmático", "Conservador", "Ágil"], valores: ["Congruencia", "Justicia", "Lealtad"], v: 4, k: 8, a: 3 },
+            { nombre: "Márquez Padilla Alcántara José Andrés", quizzes: [8402, 7634, 7665], asistencia: ['F','A','A','A'], carrera: "Ingeniería", apodo: "Andrés", hobbie: "Idiomas (Ruso)", crack: "Ajedrez", altasPropia: ["Pensamiento crítico", "Análisis", "Liderazgo"], bajas: ["Comunicación", "Delegación", "Trabajo en equipo"], wingfinder: ["Pensamiento crítico", "Resolución problemas", "Análisis", "Prudencia"], valores: ["Integridad", "Servicio", "Responsabilidad"], v: 5, k: 5, a: 5 },
+            { nombre: "Montoya Alanis Alan", quizzes: [6900, 8056, 7552], asistencia: ['A','A','A','A'], carrera: "Finanzas", apodo: "Alan", hobbie: "GYM Pesas", crack: "Carisma", altasPropia: ["Inteligencia emocional", "Negociación", "Empatía"], bajas: ["Gestión del cambio", "Gestión del tiempo", "Manejo de estrés"], wingfinder: ["Reservado", "Pragmático", "Conservador", "Modesto"], valores: ["Liderazgo", "Determinación", "Empatía"], v: 5, k: 4, a: 6 },
+            { nombre: "Mújica García Emilio", quizzes: [5800, 7921, 6213], asistencia: ['A','A','A','A'], carrera: "Finanzas", apodo: "Emilio", hobbie: "Videojuegos", crack: "Sociable", altasPropia: ["Empatía", "Adaptabilidad", "Sociabilidad"], bajas: ["Manejo de estrés", "Organización", "Planeación"], wingfinder: ["Creatividad", "Empatía", "Atento", "Soporte"], valores: ["Empatía", "Perdón", "Perseverancia"], v: 4, k: 6, a: 5 },
+            { nombre: "Novelo Salomón Ana Amelie", quizzes: [8100, 5500, 0], asistencia: ['A','A','R','F'], carrera: "Negocios", apodo: "Amelie", hobbie: "Cine", crack: "Basket", altasPropia: ["Gestión del cambio", "Liderazgo", "Manejo de estrés"], bajas: ["Autocontrol", "Comunicación", "Delegación"], wingfinder: ["Gestión del cambio", "Liderazgo", "Manejo de estrés", "Determinada"], valores: ["Lealtad", "Perseverancia", "Puntualidad"], v: 7, k: 6, a: 2 },
+            { nombre: "Núñez Castañeda Natalia", quizzes: [8375, 7497, 8345], asistencia: ['X','A','A','A'], carrera: "Mecatrónica", apodo: "Natalia", hobbie: "LEGOS", crack: "Idiomas (Japonés)", altasPropia: ["Liderazgo", "Reuniones efectivas", "Trabajo en equipo"], bajas: ["Manejo de estrés", "Negociación", "Delegación"], wingfinder: ["Centrada", "Modesta", "Paciente", "Relajada"], valores: ["Alegría", "Amistad", "Determinación"], v: 6, k: 6, a: 4 },
+            { nombre: "Perez Varela Ana Cecilia", quizzes: [0, 6988, 7312], asistencia: ['A','A','A','A'], carrera: "Mercadotecnia", apodo: "AnaCecy", hobbie: "Tés", crack: "Cocina (Carnitas)", altasPropia: ["Administración de tiempo", "Inteligencia emocional", "Liderazgo"], bajas: ["Negociación", "Manejo de estrés", "Trabajo en equipo"], wingfinder: ["Diplomática", "Soporte", "Inteligencia emocional", "Paciente"], valores: ["Empatía", "Respeto", "Puntualidad"], v: 7, k: 6, a: 2 },
+            { nombre: "Said Pérez José Ignacio", quizzes: [0, 6544, 7889], asistencia: ['A','A','F','A'], carrera: "Contabilidad", apodo: "Ignacio", hobbie: "Ver Deportes", crack: "Beisbol", altasPropia: ["Inteligencia emocional", "Liderazgo", "Gestión del cambio"], bajas: ["Manejo de estrés", "Comunicación asertiva", "Administración del tiempo"], wingfinder: ["Inteligencia emocional", "Liderazgo", "Gestión del cambio", "Analítico"], valores: ["Empatía", "Disciplina", "Perseverancia"], v: 6, k: 8, a: 5 },
+            { nombre: "Salas Rubio Ian Trett", quizzes: [8893, 8728, 9110], asistencia: ['A','A','A','A'], carrera: "Negocios", apodo: "IAN", hobbie: "Videojuegos", crack: "Improvisación", altasPropia: ["Inteligencia emocional", "Trabajo en equipo", "Pensamiento crítico"], bajas: ["Negociación", "Gestión del cambio", "Liderazgo"], wingfinder: ["Inteligencia emocional", "Trabajo equipo", "Pensamiento crítico", "Creativo"], valores: ["Empatía", "Disciplina", "Lealtad"], v: 6, k: 8, a: 5 },
+            { nombre: "Sarabia González Fatima Daniela", quizzes: [8783, 8255, 8443], asistencia: ['A','A','A','A'], carrera: "Finanzas", apodo: "Daniela", hobbie: "Música (ADELE)", crack: "Lectura de Emociones", altasPropia: ["Inteligencia emocional", "Administración del tiempo", "Autogestión"], bajas: ["Gestión del cambio", "Negociación", "Delegación"], wingfinder: ["Inteligencia emocional", "Gestión tiempo", "Autogestión", "Atenta"], valores: ["Alegría", "Lealtad", "Autoestima"], v: 7, k: 2, a: 6 },
+            { nombre: "Torres Landa Lozano Patricio", quizzes: [8378, 0, 7112], asistencia: ['A','A','A','A'], carrera: "Mercadotecnia", apodo: "Patricio", hobbie: "Tocho", crack: "Videojuegos", altasPropia: ["Liderazgo", "Trabajo en equipo", "Comunicación"], bajas: ["Gestión del cambio", "Negociación", "Delegación"], wingfinder: ["Liderazgo", "Trabajo equipo", "Comunicación", "Directo"], valores: ["Autoestima", "Respeto", "Iniciativa"], v: 3, k: 5, a: 7 },
+            { nombre: "Vazquez Paniagua Macias Juan Manuel", quizzes: [8713, 7874, 8221], asistencia: ['A','A','R','A'], carrera: "Mecatrónica", apodo: "JUAN", hobbie: "Videojuegos", crack: "Programación", altasPropia: ["Pensamiento Crítico", "Trabajo en equipo", "Inteligencia emocional"], bajas: ["Liderazgo", "Manejo de estrés", "Negociación"], wingfinder: ["Pensamiento Crítico", "Trabajo equipo", "Inteligencia emocional", "Independiente"], valores: ["Determinación", "Congruencia", "Responsabilidad"], v: 4, k: 3, a: 8 },
+            { nombre: "Verdura Basañez Marc", quizzes: [8910, 8896, 9225], asistencia: ['A','A','A','A'], carrera: "Negocios", apodo: "Marc", crack: "Negociación", altasPropia: ["Negociación", "Estrategia", "Liderazgo"], bajas: ["Delegación", "Administración del tiempo", "Manejo de estrés"], wingfinder: ["Negociación", "Estrategia", "Liderazgo", "Pragmático"], valores: ["Respeto", "Excelencia", "Disciplina"], v: 5, k: 5, a: 5 }
         ];
 
-        const UP_BLUE = '#004b8d';
-        const UP_RED = '#ce1126';
-        const UP_GOLD = '#a68a56';
+        const UP_BLUE = '#004b8d', UP_RED = '#ce1126', UP_GOLD = '#a68a56';
 
         const Icon = ({ name, size = 18, className = "" }) => {
-            useEffect(() => {
-                if (window.lucide) { window.lucide.createIcons(); }
-            }, [name]);
+            useEffect(() => { if (window.lucide) { window.lucide.createIcons(); } }, [name]);
             return <i data-lucide={name} style={{ width: size, height: size }} className={className}></i>;
         };
 
@@ -86,21 +81,16 @@
 
             const stats = useMemo(() => {
                 const counts = { altas: {}, bajas: {}, canales: { Visual: 0, Kinestésico: 0, Auditivo: 0 } };
-                let sum1 = 0, part1 = 0, sum2 = 0, part2 = 0;
+                let sums = [0, 0, 0], countsParticip = [0, 0, 0];
                 
                 rawData.forEach(s => {
-                    // Contabilizar solo 3 por alumno
-                    s.altas?.slice(0,3).forEach(c => counts.altas[c] = (counts.altas[c] || 0) + 1);
+                    s.altasPropia?.slice(0,3).forEach(c => counts.altas[c] = (counts.altas[c] || 0) + 1);
                     s.bajas?.slice(0,3).forEach(c => counts.bajas[c] = (counts.bajas[c] || 0) + 1);
-                    
-                    // Cálculo de promedios de participantes reales
-                    if (s.quizzes[0] > 0) { sum1 += s.quizzes[0]; part1++; }
-                    if (s.quizzes[1] > 0) { sum2 += s.quizzes[1]; part2++; }
-                    
-                    const maxV = Math.max(s.v || 0, s.k || 0, s.a || 0);
-                    if (maxV > 0) {
-                        if (s.v === maxV) counts.canales.Visual++;
-                        else if (s.k === maxV) counts.canales.Kinestésico++;
+                    s.quizzes.forEach((val, i) => { if (val > 0) { sums[i] += val; countsParticip[i]++; } });
+                    const maxS = Math.max(s.v || 0, s.k || 0, s.a || 0);
+                    if (maxS > 0) {
+                        if (s.v === maxS) counts.canales.Visual++;
+                        else if (s.k === maxS) counts.canales.Kinestésico++;
                         else counts.canales.Auditivo++;
                     }
                 });
@@ -110,45 +100,41 @@
                     topBajas: Object.entries(counts.bajas).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value).slice(0, 3),
                     canalesData: Object.entries(counts.canales).map(([name, value]) => ({ name, value })),
                     quizHistory: [
-                        { name: '27-Ene', score: part1 > 0 ? Math.round(sum1/part1) : 0 },
-                        { name: '03-Feb', score: part2 > 0 ? Math.round(sum2/part2) : 0 }
+                        { name: 'S1', score: countsParticip[0] > 0 ? Math.round(sums[0]/countsParticip[0]) : 0 },
+                        { name: 'S2', score: countsParticip[1] > 0 ? Math.round(sums[1]/countsParticip[1]) : 0 },
+                        { name: 'S3', score: countsParticip[2] > 0 ? Math.round(sums[2]/countsParticip[2]) : 0 }
                     ],
-                    quizRanking: [...rawData].map(s => ({ name: s.apodo, score: (s.quizzes[0] || 0) + (s.quizzes[1] || 0) })).sort((a, b) => b.score - a.score).slice(0, 8)
+                    quizRanking: [...rawData].map(s => ({ name: s.apodo, score: s.quizzes.reduce((a,b)=>a+b,0) })).sort((a, b) => b.score - a.score).slice(0, 10)
                 };
             }, []);
 
-            const filteredStudents = rawData.filter(s => 
-                s.nombre.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                s.apodo.toLowerCase().includes(searchTerm.toLowerCase())
-            );
+            const filteredStudents = rawData.filter(s => s.nombre.toLowerCase().includes(searchTerm.toLowerCase()) || s.apodo.toLowerCase().includes(searchTerm.toLowerCase()));
 
             const renderResumen = () => (
                 <div className="space-y-6 animate-fade pb-10">
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <div className="bg-white p-5 border-b-4 border-up-blue shadow-sm">
-                            <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest">Alumnos</p>
+                        <div className="bg-white p-5 border-b-4 border-up-blue shadow-sm text-center">
+                            <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest leading-none mb-2">Alumnos</p>
                             <p className="text-2xl font-black text-gray-800">{rawData.length}</p>
                         </div>
-                        <div className="bg-white p-5 border-b-4 border-up-red shadow-sm">
-                            <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest">Promedio Real S2</p>
-                            <p className="text-2xl font-black text-gray-800">{stats.quizHistory[1].score}</p>
+                        <div className="bg-white p-5 border-b-4 border-up-red shadow-sm text-center">
+                            <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest leading-none mb-2">Media Real S3</p>
+                            <p className="text-2xl font-black text-gray-800">{stats.quizHistory[2].score}</p>
                         </div>
-                        <div className="bg-white p-5 border-b-4 border-up-gold shadow-sm">
-                            <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest">Top Fortaleza</p>
-                            <p className="text-lg font-black text-gray-800 truncate">{stats.topAltas[0]?.name}</p>
+                        <div className="bg-white p-5 border-b-4 border-up-gold shadow-sm text-center">
+                            <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest leading-none mb-2">Ranking #1</p>
+                            <p className="text-lg font-black truncate">{stats.quizRanking[0].name}</p>
                         </div>
-                        <div className="bg-white p-5 border-b-4 border-up-blue shadow-sm">
-                            <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest">Foco Crítico</p>
-                            <p className="text-lg font-black text-gray-800 truncate">{stats.topBajas[0]?.name}</p>
+                        <div className="bg-white p-5 border-b-4 border-up-blue shadow-sm text-center">
+                            <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest leading-none mb-2">Fortaleza Gral.</p>
+                            <p className="text-lg font-black truncate">{stats.topAltas[0]?.name}</p>
                         </div>
                     </div>
                     
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <div className="bg-white p-6 shadow-sm border rounded-lg">
-                            <h3 className="text-xs font-black uppercase mb-6 text-up-blue flex items-center gap-2">
-                                <Icon name="brain" size={14} className="text-up-blue"/> Estilos de Percepción del Grupo
-                            </h3>
-                            <div className="h-64">
+                            <h3 className="text-xs font-black uppercase mb-6 text-up-blue flex items-center gap-2"><Icon name="brain" size={14} className="text-up-blue"/> Distribución Percepción (VAK)</h3>
+                            <div className="h-64 flex items-center justify-center">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <PieChart>
                                         <Pie 
@@ -167,14 +153,12 @@
                             </div>
                         </div>
                         <div className="bg-white p-6 shadow-sm border rounded-lg">
-                            <h3 className="text-xs font-black uppercase mb-6 text-up-blue flex items-center gap-2">
-                                <Icon name="trending-up" size={14} className="text-up-red"/> Evolución Promedio Académico
-                            </h3>
+                            <h3 className="text-xs font-black uppercase mb-6 text-up-blue flex items-center gap-2"><Icon name="trending-up" size={14} className="text-up-red"/> Evolución Académica Reales</h3>
                             <div className="h-64">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <BarChart data={stats.quizHistory}>
                                         <XAxis dataKey="name" tick={{fontSize: 10, fontWeight: 'bold'}} axisLine={false} tickLine={false} />
-                                        <YAxis domain={[0, 10000]} hide />
+                                        <YAxis domain={[0, 11000]} hide />
                                         <Tooltip cursor={{fill: '#f8f9fa'}} />
                                         <Bar dataKey="score" fill={UP_BLUE} radius={[4, 4, 0, 0]} barSize={60} label={{ position: 'top', fontSize: 10, fontWeight: 'bold' }} />
                                     </BarChart>
@@ -185,23 +169,23 @@
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="bg-white p-6 shadow-sm border rounded-lg border-l-8 border-green-600">
-                            <h3 className="text-xs font-black uppercase mb-6 text-green-700">Fortalezas del Salón (Top 3)</h3>
+                            <h3 className="text-xs font-black uppercase mb-6 text-green-700">Top 3 Fortalezas (Grupo)</h3>
                             <div className="space-y-4">
                                 {stats.topAltas.map((item, i) => (
                                     <div key={i} className="flex items-center justify-between">
-                                        <span className="text-sm font-bold text-gray-700 uppercase tracking-tight">{item.name}</span>
-                                        <span className="text-[10px] font-black text-green-700">{item.value} ALUMNOS</span>
+                                        <span className="text-sm font-bold text-gray-700 uppercase">{item.name}</span>
+                                        <span className="text-[10px] font-black text-green-700">{item.value} AL.</span>
                                     </div>
                                 ))}
                             </div>
                         </div>
                         <div className="bg-white p-6 shadow-sm border rounded-lg border-l-8 border-up-red">
-                            <h3 className="text-xs font-black uppercase mb-6 text-up-red">Áreas de Foco (Top 3)</h3>
+                            <h3 className="text-xs font-black uppercase mb-6 text-up-red">Top 3 Áreas de Foco (Grupo)</h3>
                             <div className="space-y-4">
                                 {stats.topBajas.map((item, i) => (
                                     <div key={i} className="flex items-center justify-between">
-                                        <span className="text-sm font-bold text-gray-700 uppercase tracking-tight">{item.name}</span>
-                                        <span className="text-[10px] font-black text-up-red">{item.value} ALUMNOS</span>
+                                        <span className="text-sm font-bold text-gray-700 uppercase">{item.name}</span>
+                                        <span className="text-[10px] font-black text-up-red">{item.value} AL.</span>
                                     </div>
                                 ))}
                             </div>
@@ -211,7 +195,7 @@
             );
 
             const renderLista = () => (
-                <div className="space-y-4 animate-fade">
+                <div className="space-y-4 animate-fade pb-10">
                     <div className="bg-white p-3 shadow-sm rounded-lg border flex items-center gap-3">
                         <Icon name="search" size={18} className="text-gray-400" />
                         <input type="text" placeholder="Buscar por apellido o apodo..." className="w-full outline-none text-sm" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}/>
@@ -221,7 +205,7 @@
                             <div key={idx} onClick={() => { setSelectedStudent(s); setActiveTab('individual'); }} className="bg-white p-4 border rounded-lg shadow-sm flex justify-between items-center cursor-pointer hover:border-up-blue transition-all group active:scale-95">
                                 <div className="overflow-hidden">
                                     <p className="font-bold text-sm text-gray-800 uppercase truncate">{s.nombre}</p>
-                                    <p className="text-[10px] text-up-red font-black uppercase italic">"{s.apodo}" • Score: {(s.quizzes[0] || 0) + (s.quizzes[1] || 0)}</p>
+                                    <p className="text-[10px] text-up-red font-black uppercase italic">"{s.apodo}" • Total: {s.quizzes.reduce((a,b)=>a+b,0)}</p>
                                 </div>
                                 <Icon name="chevron-right" size={18} className="text-gray-300 group-hover:text-up-blue shrink-0" />
                             </div>
@@ -231,74 +215,83 @@
             );
 
             const renderPerfil = () => {
-                if (!selectedStudent) return (
-                    <div className="text-center py-20 bg-white border-2 border-dashed rounded-xl px-6 animate-fade">
-                        <Icon name="user" size={48} className="mx-auto text-gray-200 mb-4" />
-                        <p className="text-gray-400 font-bold uppercase text-[10px] tracking-widest text-xs">Selecciona un perfil en la pestaña "Alumnos"</p>
-                    </div>
-                );
-
+                if (!selectedStudent) return <div className="text-center py-20 animate-fade text-gray-400 uppercase text-[10px] font-black tracking-widest">Selecciona un alumno en Alumnos</div>;
+                
+                const totalScore = selectedStudent.quizzes.reduce((a,b)=>a+b,0);
                 const maxS = Math.max(selectedStudent.v || 0, selectedStudent.k || 0, selectedStudent.a || 0);
                 const canalD = selectedStudent.v === maxS ? 'Visual' : (selectedStudent.k === maxS ? 'Kinestésico' : 'Auditivo');
                 const canalColor = canalD === 'Visual' ? 'bg-[#004b8d]' : (canalD === 'Kinestésico' ? 'bg-[#ce1126]' : 'bg-[#a68a56]');
 
                 return (
                     <div className="space-y-6 pb-20 animate-fade">
-                        <div className="bg-white p-8 border shadow-sm border-t-8 border-up-blue rounded-b-lg">
-                            <div className="flex flex-col items-center text-center">
-                                <div className="w-24 h-24 up-blue text-white flex items-center justify-center text-4xl font-black mb-4 shadow-xl">
-                                    {selectedStudent.nombre[0]}
-                                </div>
-                                <h2 className="text-4xl font-black text-gray-800 uppercase leading-tight tracking-tighter">{selectedStudent.nombre}</h2>
-                                <p className="text-up-red font-bold text-2xl mt-1 italic">"{selectedStudent.apodo}"</p>
-                                <div className="flex flex-wrap justify-center gap-4 mt-6 border-t pt-6 w-full text-[10px] font-black uppercase text-gray-400">
-                                    <span>{selectedStudent.carrera}</span>
-                                    <span className={`text-white px-2 py-0.5 ${canalColor}`}>{canalD}</span>
-                                    <span className="text-up-red font-bold">Total Menti: {(selectedStudent.quizzes[0] || 0) + (selectedStudent.quizzes[1] || 0)}</span>
-                                </div>
+                        {/* Identidad */}
+                        <div className="bg-white p-8 border shadow-sm border-t-8 border-up-blue rounded-b-lg text-center">
+                            <div className="w-24 h-24 up-blue text-white flex items-center justify-center text-4xl font-black mb-4 mx-auto shadow-xl">{selectedStudent.nombre[0]}</div>
+                            <h2 className="text-4xl font-black text-gray-800 uppercase tracking-tighter leading-tight">{selectedStudent.nombre}</h2>
+                            <p className="text-up-red font-bold text-2xl mt-1 italic">"{selectedStudent.apodo}"</p>
+                            <div className="flex flex-wrap justify-center gap-4 mt-6 border-t pt-6 w-full text-[10px] font-black uppercase text-gray-400">
+                                <span className={`text-white px-2 py-0.5 ${canalColor}`}>{canalD}</span>
+                                <span>{selectedStudent.carrera}</span>
+                                <span className="text-up-red font-bold tracking-tight">Acumulado Menti: {totalScore}</span>
+                            </div>
+                        </div>
+
+                        {/* Asistencia Semanal */}
+                        <div className="bg-white p-5 border shadow-sm rounded-lg border-l-8 border-up-blue">
+                            <h3 className="text-[11px] font-black uppercase text-up-blue mb-4 border-b pb-1">Seguimiento de Asistencia (S1-S4)</h3>
+                            <div className="flex justify-between md:justify-around text-center">
+                                {selectedStudent.asistencia.map((status, i) => (
+                                    <div key={i}>
+                                        <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest">Sem 0{i+1}</p>
+                                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold text-sm shadow-sm ${status==='A'?'bg-green-100 text-green-700':status==='F'?'bg-red-100 text-red-700':'bg-yellow-100 text-yellow-700'}`}>{status}</div>
+                                    </div>
+                                ))}
                             </div>
                         </div>
 
                         <div className="bg-white p-6 border shadow-sm rounded-lg border-l-8 border-up-gold">
-                            <h3 className="text-[11px] font-black uppercase text-up-gold mb-5 flex items-center gap-2 border-b pb-2"><Icon name="star" size={16} /> Intereses y Talentos</h3>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div className="flex items-start gap-3">
-                                    <Icon name="coffee" className="text-up-blue" />
-                                    <div><p className="text-[9px] font-black text-gray-400 uppercase">Pasatiempo</p><p className="text-sm font-bold text-gray-800 uppercase leading-tight">{selectedStudent.hobbie}</p></div>
-                                </div>
-                                <div className="flex items-start gap-3">
-                                    <Icon name="zap" className="text-up-red" />
-                                    <div><p className="text-[9px] font-black text-gray-400 uppercase">Es un crack para...</p><p className="text-sm font-black text-up-blue uppercase leading-tight">{selectedStudent.crack}</p></div>
-                                </div>
+                            <h3 className="text-[11px] font-black uppercase text-up-gold mb-5 flex items-center gap-2 border-b pb-2"><Icon name="star" size={16} /> Identidad Académica</h3>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-medium">
+                                <p><span className="font-black text-up-blue uppercase block mb-1">Pasatiempo favorito:</span> {selectedStudent.hobbie}</p>
+                                <p><span className="font-black text-up-red uppercase block mb-1">Es un crack para:</span> {selectedStudent.crack}</p>
                             </div>
                         </div>
 
-                        <div className="bg-white p-6 border shadow-sm rounded-lg">
-                            <h3 className="text-[11px] font-black uppercase text-up-gold mb-5 border-b pb-2">Tríada de Valores</h3>
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[10px] font-bold text-gray-700 uppercase">
-                                {selectedStudent.valores.slice(0,3).map((v, i) => <div key={i} className="bg-gray-50 p-2 rounded truncate text-center">{i+1}. {v}</div>)}
-                            </div>
-                        </div>
-
+                        {/* CONTRASTE DIAGNÓSTICO */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="bg-white p-6 border shadow-sm rounded-lg border-l-4 border-green-600">
-                                <h3 className="text-[11px] font-black uppercase text-green-700 mb-4 tracking-[2px]"><Icon name="award" size={16} /> Fortalezas (Top 3)</h3>
+                            <div className="bg-white p-6 border shadow-sm border-l-4 border-green-600 rounded-lg">
+                                <h3 className="text-[11px] font-black uppercase text-green-700 mb-4 tracking-[2px] flex items-center gap-2"><Icon name="user-check" size={16} /> Percepción Propia (Top 3)</h3>
                                 <div className="space-y-2">
-                                    {selectedStudent.altas.slice(0,3).map((c, i) => <div key={i} className="bg-green-50 p-3 border-l-4 border-green-600 font-black text-xs uppercase text-gray-800">{c}</div>)}
+                                    {selectedStudent.altasPropia.slice(0,3).map((c, i) => (
+                                        <div key={i} className="bg-green-50 p-3 border-l-4 border-green-600 font-black text-xs uppercase text-gray-800">{c}</div>
+                                    ))}
                                 </div>
                             </div>
-                            <div className="bg-white p-6 border shadow-sm rounded-lg border-l-4 border-up-red">
-                                <h3 className="text-[11px] font-black uppercase text-up-red mb-4 tracking-[2px]"><Icon name="target" size={16} /> Debilidades (Top 3)</h3>
-                                <div className="space-y-2">
-                                    {selectedStudent.bajas.slice(0,3).map((c, i) => <div key={i} className="bg-red-50 p-3 border-l-4 border-up-red font-black text-xs uppercase text-gray-800">{c}</div>)}
+                            <div className="bg-white p-6 border shadow-sm border-l-4 border-up-gold rounded-lg">
+                                <h3 className="text-[11px] font-black uppercase text-up-gold mb-4 tracking-[2px] flex items-center gap-2"><Icon name="award" size={16} /> Wingfinder Test (Top 4)</h3>
+                                <div className="grid grid-cols-1 gap-2">
+                                    {selectedStudent.wingfinder.slice(0,4).map((c, i) => (
+                                        <div key={i} className="bg-yellow-50 p-3 border border-yellow-100 font-black text-[10px] uppercase text-gray-800 rounded-sm text-center">{c}</div>
+                                    ))}
                                 </div>
                             </div>
                         </div>
 
-                        <div className="bg-gray-900 text-white p-8 border-t-8 border-up-red shadow-2xl rounded-lg">
-                            <h3 className="text-xl font-black uppercase tracking-tighter mb-4 text-up-gold">Plan de Mejora Táctico</h3>
-                            <p className="text-sm font-light leading-relaxed">
-                                Potenciar <strong className="text-white uppercase italic">{selectedStudent.altas[0]}</strong> aprovechando su talento en <strong className="text-white font-bold uppercase">{selectedStudent.crack}</strong>. La formación debe ser predominantemente <strong className="text-up-gold uppercase">{canalD}</strong> centrada en su valor motor de {selectedStudent.valores[0]}.
+                        {/* DEBILIDADES */}
+                        <div className="bg-white p-6 border shadow-sm border-l-4 border-up-red rounded-lg">
+                            <h3 className="text-[11px] font-black uppercase text-up-red mb-4 tracking-[2px] flex items-center gap-2"><Icon name="target" size={16} /> Áreas de Oportunidad (3)</h3>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                {selectedStudent.bajas.slice(0,3).map((c, i) => (
+                                    <div key={i} className="bg-red-50 p-3 border-l-4 border-up-red font-black text-xs uppercase text-gray-800 truncate text-center flex items-center justify-center leading-none min-h-[40px]">{c}</div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Estrategia Final */}
+                        <div className="bg-gray-900 text-white p-10 border-t-8 border-up-red shadow-2xl rounded-lg">
+                            <h3 className="text-xl font-black uppercase tracking-tighter mb-4 text-up-gold flex items-center gap-3"><Icon name="zap" size={20} className="text-up-gold" /> Estrategia Docente Táctica</h3>
+                            <p className="text-base font-light leading-relaxed">
+                                El diagnóstico cruzado sugiere potenciar <strong className="text-white uppercase">{selectedStudent.altasPropia[0]}</strong> vinculándola con la fortaleza detectada en el test: <strong className="text-up-gold uppercase">{selectedStudent.wingfinder[0]}</strong>. Al ser un perfil <strong className="text-up-gold uppercase">{canalD}</strong>, se recomienda dar feedback {canalD === 'Visual' ? 'mediante diagramas estructurados' : 'a través de aplicaciones prácticas'}, apelando a su valor de <strong className="text-white">{selectedStudent.valores[0]}</strong>.
                             </p>
                         </div>
                     </div>
@@ -306,9 +299,12 @@
             };
 
             return (
-                <div className="min-h-screen flex flex-col">
+                <div className="min-h-screen flex flex-col pb-10">
                     <header className="bg-white border-b-2 border-up-blue sticky top-0 z-50 p-4 shadow-md flex justify-between items-center">
-                        <div className="flex items-center gap-3"><div className="w-10 h-10 up-blue text-white flex items-center justify-center font-black text-lg shadow rounded-sm shrink-0">UP</div><div className="hidden sm:block text-[10px] font-black text-up-blue uppercase tracking-tight">Competencias Directivas</div></div>
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 up-blue text-white flex items-center justify-center font-black text-lg shadow rounded-sm shrink-0">UP</div>
+                            <div className="hidden sm:block text-[10px] font-black text-up-blue uppercase tracking-tight leading-none">Competencias Directivas<br/><span className="text-up-red text-[8px]">Universidad Panamericana</span></div>
+                        </div>
                         <div className="flex bg-gray-100 p-1 rounded-lg">
                             <button onClick={() => setActiveTab('resumen')} className={`px-4 py-2 rounded-md transition-all flex items-center gap-2 ${activeTab === 'resumen' ? 'bg-white text-up-blue shadow-md' : 'text-gray-400'}`}><Icon name="bar-chart-3" /></button>
                             <button onClick={() => setActiveTab('busqueda')} className={`px-4 py-2 rounded-md transition-all flex items-center gap-2 ${activeTab === 'busqueda' ? 'bg-white text-up-blue shadow-md' : 'text-gray-400'}`}><Icon name="users" /></button>
@@ -318,7 +314,7 @@
                     <main className="max-w-5xl mx-auto w-full p-4 md:p-8 flex-grow">
                         {activeTab === 'resumen' && renderResumen()}{activeTab === 'busqueda' && renderLista()}{activeTab === 'individual' && renderPerfil()}
                     </main>
-                    <footer className="text-center py-6 text-[9px] font-black uppercase text-gray-300 tracking-[4px]">Ubi spiritus, libertas • Universidad Panamericana • © 2026</footer>
+                    <footer className="text-center py-6 text-[9px] font-black uppercase text-gray-300 tracking-[4px]">Ubi spiritus, libertas • Facultad de Empresariales • © 2026</footer>
                 </div>
             );
         };
